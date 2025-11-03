@@ -28,6 +28,7 @@ function [agent, training_stats] = train_rl_agent(config)
     training_stats.episode_fairness = zeros(1, num_episodes);
     training_stats.episode_handovers = zeros(1, num_episodes);
     training_stats.epsilon_history = zeros(1, num_episodes);
+    training_stats.q_coverage = zeros(1, num_episodes);
     
     for episode = 1:num_episodes
         base_params = load_config();
@@ -75,11 +76,13 @@ function [agent, training_stats] = train_rl_agent(config)
         training_stats.episode_fairness(episode) = mean(results.fairness);
         training_stats.episode_handovers(episode) = sum(results.handovers);
         training_stats.epsilon_history(episode) = agent.epsilon;
+        training_stats.q_coverage(episode) = agent.get_coverage();
         
         if mod(episode, 50) == 0
-            fprintf('Ep %d/%d: Rew=%.2f Fair=%.3f HO=%d Eps=%.3f\n', ...
+            fprintf('Ep %d/%d: Rew=%.2f Fair=%.3f HO=%d Eps=%.3f Cov=%.2f%%\n', ...
                 episode, num_episodes, episode_reward, ...
-                mean(results.fairness), sum(results.handovers), agent.epsilon);
+                mean(results.fairness), sum(results.handovers), agent.epsilon, ...
+                training_stats.q_coverage(episode));
         end
     end
     

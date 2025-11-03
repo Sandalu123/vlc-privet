@@ -119,5 +119,10 @@ classdef QLearningAgent < handle
                 obj.state_counts = data.state_counts;
             end
         end
+        
+        function coverage = get_coverage(obj)
+            visited = obj.Q_table ~= 0;
+            coverage = (sum(visited(:)) / numel(obj.Q_table)) * 100;
+        end
     end
 end
