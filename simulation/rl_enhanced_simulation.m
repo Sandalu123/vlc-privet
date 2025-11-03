@@ -19,7 +19,7 @@ function results = rl_enhanced_simulation(agent, num_runs)
         network = create_network(base_params);
         results = initialize_results(base_params);
         
-        actions = define_action_space();
+        actions = define_action_space_reduced();
         
         for t = 1:base_params.simulation_time
             if t == 1
