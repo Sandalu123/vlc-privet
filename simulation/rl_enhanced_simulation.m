@@ -35,8 +35,8 @@ function results = rl_enhanced_simulation(agent, num_runs)
             [users, handover_count] = perform_handover(users, network, params);
             [wifi_users, vlc_users] = split_users_by_network(users);
             
-            wifi_alloc = allocate_resources(wifi_users, params.wifi_capacity);
-            vlc_alloc = allocate_resources(vlc_users, params.vlc_capacity);
+            wifi_alloc = allocate_resources(wifi_users, params.wifi_capacity, params.allocation_method);
+            vlc_alloc = allocate_resources(vlc_users, params.vlc_capacity, params.allocation_method);
             
             users = merge_allocations(users, wifi_users, vlc_users, wifi_alloc, vlc_alloc);
             results = record_results(results, t, users, handover_count, params);
