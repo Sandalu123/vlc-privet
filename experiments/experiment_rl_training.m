@@ -12,11 +12,11 @@ function experiment_rl_training()
     
     config = struct();
     config.num_episodes = 5000;
-    config.learning_rate = 0.015;
-    config.gamma = 0.96;
+    config.learning_rate = 0.012;
+    config.gamma = 0.97;
     config.epsilon_start = 1.0;
-    config.epsilon_decay = 0.9996;
-    config.epsilon_min = 0.08;
+    config.epsilon_decay = 0.9997;
+    config.epsilon_min = 0.05;
     
     fprintf('Training RL agent with %d episodes...\n\n', config.num_episodes);
     

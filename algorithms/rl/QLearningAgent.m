@@ -64,10 +64,10 @@ classdef QLearningAgent < handle
         
         function state_idx = discretize_state(obj, state)
             key_features = [
-                state(9)
-                state(4)
-                state(5)
                 state(6)
+                state(9)
+                state(8)
+                state(4)
             ];
             
             key_features = key_features(1:obj.state_dim);
