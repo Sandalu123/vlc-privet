@@ -1,11 +1,11 @@
 function actions = define_action_space_reduced()
-    handover_thresholds = [0.10, 0.15, 0.20];
-    wifi_ratios = [0.5, 0.6, 0.7];
-    weight_max_values = [5, 7];
-    allocation_methods = {'wwa', 'proportional'};
+    handover_thresholds = [0.12, 0.18];
+    wifi_ratios = [0.55, 0.65, 0.75];
+    weight_max_values = [6, 8];
+    allocation_methods = {'proportional', 'proportional', 'proportional', 'wwa'};
     qos_presets = {
-        [0.4, 0.3, 0.2, 0.1],
-        [0.35, 0.35, 0.2, 0.1]
+        [0.35, 0.35, 0.2, 0.1],
+        [0.4, 0.3, 0.2, 0.1]
     };
     
     action_count = 0;
