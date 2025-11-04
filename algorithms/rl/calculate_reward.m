@@ -6,12 +6,12 @@ function reward = calculate_reward(results, t)
     
     fairness_reward = results.fairness(t) * 18;
     
-    handover_penalty = results.handovers(t) * 0.20;
+    handover_penalty = results.handovers(t) * 0.35;
     
     throughput_reward = 0;
     if results.total_users(t) > 0 && t > 1
         avg_throughput = results.avg_allocation(t);
-        throughput_reward = min(35, avg_throughput * 4.2);
+        throughput_reward = min(35, avg_throughput * 4.0);
     end
     
     high_fairness_bonus = 0;
@@ -37,9 +37,11 @@ function reward = calculate_reward(results, t)
     
     low_handover_bonus = 0;
     handover_rate = results.handovers(t) / max(results.total_users(t), 1);
-    if handover_rate < 0.3
-        low_handover_bonus = 5;
-    elseif handover_rate < 0.4
+    if handover_rate < 0.25
+        low_handover_bonus = 8;
+    elseif handover_rate < 0.35
+        low_handover_bonus = 4;
+    elseif handover_rate < 0.45
         low_handover_bonus = 2;
     end
     

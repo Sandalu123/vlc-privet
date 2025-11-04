@@ -90,7 +90,7 @@ function [agent, training_stats] = train_rl_agent(config)
             handover_score = 1 - (sum(results.handovers) / (results.total_users(1) * 0.5));
             handover_score = max(0, min(1, handover_score));
             
-            composite_score = (fairness_score * 0.35) + (throughput_score * 0.40) + (handover_score * 0.25);
+            composite_score = (fairness_score * 0.30) + (throughput_score * 0.35) + (handover_score * 0.35);
             
             if composite_score > best_score
                 best_score = composite_score;
