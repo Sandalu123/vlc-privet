@@ -7,6 +7,7 @@ function [agent, training_stats] = train_rl_agent(config)
     addpath(fullfile(base_dir, 'core', 'users'));
     addpath(fullfile(base_dir, 'core', 'utils'));
     addpath(fullfile(base_dir, 'algorithms', 'allocation'));
+    addpath(fullfile(base_dir, 'simulation'));
     
     actions = define_action_space_reduced();
     num_actions = length(actions);
@@ -140,17 +141,50 @@ function [agent, training_stats] = train_rl_agent(config)
     fprintf('Step 2: Filtered checkpoints with fairness >= 0.92 (%d remaining)\n', length(filtered));
     
     if isempty(filtered)
-        fprintf('\n⚠ No checkpoints with fairness >= 0.92. Relaxing to >= 0.88\n');
-        filtered = top_fairness([top_fairness.fairness] >= 0.88);
-    end
-    
-    if isempty(filtered)
         fprintf('\n⚠ No suitable checkpoints found. Using best fairness checkpoint.\n');
         selected_checkpoint = top_fairness(1);
     else
         [~, idx] = sort([filtered.throughput], 'descend');
-        top_10 = filtered(idx(1:min(10, length(idx))));
-        fprintf('Step 3: Selected top 10 by throughput\n\n');
+        top_10_candidates = filtered(idx(1:min(10, length(idx))));
+        fprintf('Step 3: Selected top 10 by throughput\n');
+        fprintf('Step 4: Evaluating candidates (3 runs each)...\n\n');
+        
+        top_10 = [];
+        for i = 1:length(top_10_candidates)
+            cp_data = load(fullfile(checkpoint_dir, top_10_candidates(i).filename));
+            temp_agent = QLearningAgent(struct(...
+                'learning_rate', 0.01, ...
+                'gamma', 0.97, ...
+                'epsilon_start', 0.05, ...
+                'epsilon_decay', 1, ...
+                'epsilon_min', 0.05, ...
+                'num_actions', length(actions), ...
+                'state_dim', 4, ...
+                'bins_per_dim', 4));
+            temp_agent.Q_table = cp_data.Q_table;
+            temp_agent.epsilon = cp_data.epsilon;
+            
+            eval_results = rl_enhanced_simulation(temp_agent, 3);
+            
+            fairness_vals = [];
+            throughput_vals = [];
+            handover_vals = [];
+            for j = 1:length(eval_results)
+                fairness_vals(j) = mean(eval_results{j}.fairness);
+                throughput_vals(j) = mean(eval_results{j}.avg_allocation);
+                handover_vals(j) = sum(eval_results{j}.handovers);
+            end
+            
+            top_10(i).episode = top_10_candidates(i).episode;
+            top_10(i).fairness = mean(fairness_vals);
+            top_10(i).throughput = mean(throughput_vals);
+            top_10(i).handovers = mean(handover_vals);
+            top_10(i).filename = top_10_candidates(i).filename;
+            
+            fprintf('  Evaluated Ep %d: Fair=%.3f Tput=%.2f HO=%.1f\n', ...
+                top_10(i).episode, top_10(i).fairness, top_10(i).throughput, top_10(i).handovers);
+        end
+        fprintf('\n');
         
         fprintf('╔════════════════════════════════════════════════════════════════════╗\n');
         fprintf('║                    Top 10 Checkpoints                              ║\n');
