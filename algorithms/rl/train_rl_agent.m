@@ -109,6 +109,10 @@ function [agent, training_stats] = train_rl_agent(config)
                 end
                 checkpoint_file = fullfile(checkpoint_dir, sprintf('checkpoint_ep%d.mat', episode));
                 save(checkpoint_file, '-struct', 'best_checkpoint');
+                
+                fprintf('  >> CHECKPOINT SAVED at Ep %d | Score=%.4f Fair=%.3f Tput=%.2f HO=%d\n', ...
+                    episode, composite_score, fairness_score, ...
+                    mean(results.avg_allocation), sum(results.handovers));
             end
         end
         
