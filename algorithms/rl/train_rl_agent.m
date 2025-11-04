@@ -31,9 +31,13 @@ function [agent, training_stats] = train_rl_agent(config)
     training_stats.q_coverage = zeros(1, num_episodes);
     training_stats.episode_throughput = zeros(1, num_episodes);
     
-    best_score = -inf;
-    best_checkpoint = [];
-    checkpoint_interval = 100;
+    checkpoint_dir = fullfile(base_dir, 'output', 'checkpoints');
+    if exist(checkpoint_dir, 'dir')
+        rmdir(checkpoint_dir, 's');
+    end
+    mkdir(checkpoint_dir);
+    
+    checkpoint_interval = 50;
     
     for episode = 1:num_episodes
         base_params = load_config();
@@ -84,36 +88,17 @@ function [agent, training_stats] = train_rl_agent(config)
         training_stats.epsilon_history(episode) = agent.epsilon;
         training_stats.q_coverage(episode) = agent.get_coverage();
         
-        if mod(episode, checkpoint_interval) == 0 && episode >= 500
-            fairness_score = mean(results.fairness);
-            throughput_score = mean(results.avg_allocation) / 7.14;
-            handover_score = 1 - (sum(results.handovers) / (results.total_users(1) * 0.5));
-            handover_score = max(0, min(1, handover_score));
+        if mod(episode, checkpoint_interval) == 0 || episode == num_episodes
+            checkpoint = struct();
+            checkpoint.episode = episode;
+            checkpoint.Q_table = agent.Q_table;
+            checkpoint.epsilon = agent.epsilon;
+            checkpoint.fairness = mean(results.fairness);
+            checkpoint.throughput = mean(results.avg_allocation);
+            checkpoint.handovers = sum(results.handovers);
             
-            composite_score = (fairness_score * 0.30) + (throughput_score * 0.35) + (handover_score * 0.35);
-            
-            if composite_score > best_score
-                best_score = composite_score;
-                best_checkpoint = struct();
-                best_checkpoint.episode = episode;
-                best_checkpoint.Q_table = agent.Q_table;
-                best_checkpoint.epsilon = agent.epsilon;
-                best_checkpoint.fairness = fairness_score;
-                best_checkpoint.throughput = mean(results.avg_allocation);
-                best_checkpoint.handovers = sum(results.handovers);
-                best_checkpoint.score = composite_score;
-                
-                checkpoint_dir = fullfile(base_dir, 'output', 'checkpoints');
-                if ~exist(checkpoint_dir, 'dir')
-                    mkdir(checkpoint_dir);
-                end
-                checkpoint_file = fullfile(checkpoint_dir, sprintf('checkpoint_ep%d.mat', episode));
-                save(checkpoint_file, '-struct', 'best_checkpoint');
-                
-                fprintf('  >> CHECKPOINT SAVED at Ep %d | Score=%.4f Fair=%.3f Tput=%.2f HO=%d\n', ...
-                    episode, composite_score, fairness_score, ...
-                    mean(results.avg_allocation), sum(results.handovers));
-            end
+            checkpoint_file = fullfile(checkpoint_dir, sprintf('checkpoint_ep%05d.mat', episode));
+            save(checkpoint_file, '-struct', 'checkpoint');
         end
         
         if mod(episode, 50) == 0
@@ -130,26 +115,76 @@ function [agent, training_stats] = train_rl_agent(config)
         mkdir(output_dir);
     end
     
-    if ~isempty(best_checkpoint)
-        fprintf('\n--- Restoring Best Checkpoint ---\n');
-        fprintf('Before restore: Q_table checksum = %.4f\n', sum(agent.Q_table(:)));
-        
-        agent.Q_table = best_checkpoint.Q_table;
-        agent.epsilon = best_checkpoint.epsilon;
-        
-        fprintf('After restore:  Q_table checksum = %.4f\n', sum(agent.Q_table(:)));
-        fprintf('Checkpoint Q_table checksum = %.4f\n', sum(best_checkpoint.Q_table(:)));
-        
-        fprintf('\n✓ Best checkpoint loaded from Episode %d\n', best_checkpoint.episode);
-        fprintf('  Composite Score: %.4f\n', best_checkpoint.score);
-        fprintf('  Fairness:   %.3f\n', best_checkpoint.fairness);
-        fprintf('  Throughput: %.2f Mbps\n', best_checkpoint.throughput);
-        fprintf('  Handovers:  %d\n', best_checkpoint.handovers);
-        
-        training_stats.best_checkpoint = best_checkpoint;
-    else
-        fprintf('\n⚠ No checkpoint saved (training may be too short)\n');
+    fprintf('\n╔══════════════════════════════════════════════════════════════╗\n');
+    fprintf('║              Checkpoint Selection Process                    ║\n');
+    fprintf('╚══════════════════════════════════════════════════════════════╝\n\n');
+    
+    checkpoint_files = dir(fullfile(checkpoint_dir, 'checkpoint_ep*.mat'));
+    fprintf('Loading %d checkpoints...\n', length(checkpoint_files));
+    
+    checkpoints = [];
+    for i = 1:length(checkpoint_files)
+        cp_data = load(fullfile(checkpoint_dir, checkpoint_files(i).name));
+        checkpoints(i).episode = cp_data.episode;
+        checkpoints(i).fairness = cp_data.fairness;
+        checkpoints(i).throughput = cp_data.throughput;
+        checkpoints(i).handovers = cp_data.handovers;
+        checkpoints(i).filename = checkpoint_files(i).name;
     end
+    
+    [~, idx] = sort([checkpoints.fairness], 'descend');
+    top_fairness = checkpoints(idx(1:min(20, length(idx))));
+    fprintf('Step 1: Selected top 20 by fairness\n');
+    
+    filtered = top_fairness([top_fairness.fairness] >= 0.92);
+    fprintf('Step 2: Filtered checkpoints with fairness >= 0.92 (%d remaining)\n', length(filtered));
+    
+    if isempty(filtered)
+        fprintf('\n⚠ No checkpoints with fairness >= 0.92. Relaxing to >= 0.88\n');
+        filtered = top_fairness([top_fairness.fairness] >= 0.88);
+    end
+    
+    if isempty(filtered)
+        fprintf('\n⚠ No suitable checkpoints found. Using best fairness checkpoint.\n');
+        selected_checkpoint = top_fairness(1);
+    else
+        [~, idx] = sort([filtered.throughput], 'descend');
+        top_10 = filtered(idx(1:min(10, length(idx))));
+        fprintf('Step 3: Selected top 10 by throughput\n\n');
+        
+        fprintf('╔════════════════════════════════════════════════════════════════════╗\n');
+        fprintf('║                    Top 10 Checkpoints                              ║\n');
+        fprintf('╠════╦═════════╦═══════════╦═════════════╦════════════════════════╣\n');
+        fprintf('║ #  ║ Episode ║ Fairness  ║ Throughput  ║ Handovers              ║\n');
+        fprintf('╠════╬═════════╬═══════════╬═════════════╬════════════════════════╣\n');
+        
+        for i = 1:length(top_10)
+            fprintf('║ %-2d ║ %-7d ║   %.4f  ║  %.2f Mbps  ║       %2d               ║\n', ...
+                i, top_10(i).episode, top_10(i).fairness, ...
+                top_10(i).throughput, top_10(i).handovers);
+        end
+        fprintf('╚════╩═════════╩═══════════╩═════════════╩════════════════════════╝\n\n');
+        
+        selection = input('Select checkpoint (1-10): ');
+        while selection < 1 || selection > length(top_10)
+            fprintf('Invalid selection. Please enter a number between 1 and %d\n', length(top_10));
+            selection = input('Select checkpoint (1-10): ');
+        end
+        
+        selected_checkpoint = top_10(selection);
+    end
+    
+    fprintf('\n--- Loading Selected Checkpoint ---\n');
+    cp_data = load(fullfile(checkpoint_dir, selected_checkpoint.filename));
+    agent.Q_table = cp_data.Q_table;
+    agent.epsilon = cp_data.epsilon;
+    
+    fprintf('✓ Checkpoint loaded: Episode %d\n', selected_checkpoint.episode);
+    fprintf('  Fairness:   %.4f\n', selected_checkpoint.fairness);
+    fprintf('  Throughput: %.2f Mbps\n', selected_checkpoint.throughput);
+    fprintf('  Handovers:  %d\n', selected_checkpoint.handovers);
+    
+    training_stats.selected_checkpoint = selected_checkpoint;
     
     agent.save(fullfile(output_dir, 'trained_agent.mat'));
     save(fullfile(output_dir, 'training_stats.mat'), 'training_stats');
