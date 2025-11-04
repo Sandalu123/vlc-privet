@@ -126,10 +126,19 @@ function [agent, training_stats] = train_rl_agent(config)
     end
     
     output_dir = fullfile(base_dir, 'output', 'data');
+    if ~exist(output_dir, 'dir')
+        mkdir(output_dir);
+    end
     
     if ~isempty(best_checkpoint)
+        fprintf('\n--- Restoring Best Checkpoint ---\n');
+        fprintf('Before restore: Q_table checksum = %.4f\n', sum(agent.Q_table(:)));
+        
         agent.Q_table = best_checkpoint.Q_table;
         agent.epsilon = best_checkpoint.epsilon;
+        
+        fprintf('After restore:  Q_table checksum = %.4f\n', sum(agent.Q_table(:)));
+        fprintf('Checkpoint Q_table checksum = %.4f\n', sum(best_checkpoint.Q_table(:)));
         
         fprintf('\n✓ Best checkpoint loaded from Episode %d\n', best_checkpoint.episode);
         fprintf('  Composite Score: %.4f\n', best_checkpoint.score);
