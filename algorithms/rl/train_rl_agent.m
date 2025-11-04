@@ -29,6 +29,11 @@ function [agent, training_stats] = train_rl_agent(config)
     training_stats.episode_handovers = zeros(1, num_episodes);
     training_stats.epsilon_history = zeros(1, num_episodes);
     training_stats.q_coverage = zeros(1, num_episodes);
+    training_stats.episode_throughput = zeros(1, num_episodes);
+    
+    best_score = -inf;
+    best_checkpoint = [];
+    checkpoint_interval = 100;
     
     for episode = 1:num_episodes
         base_params = load_config();
@@ -74,19 +79,65 @@ function [agent, training_stats] = train_rl_agent(config)
         
         training_stats.episode_rewards(episode) = episode_reward;
         training_stats.episode_fairness(episode) = mean(results.fairness);
+        training_stats.episode_throughput(episode) = mean(results.avg_allocation);
         training_stats.episode_handovers(episode) = sum(results.handovers);
         training_stats.epsilon_history(episode) = agent.epsilon;
         training_stats.q_coverage(episode) = agent.get_coverage();
         
+        if mod(episode, checkpoint_interval) == 0 && episode >= 500
+            fairness_score = mean(results.fairness);
+            throughput_score = mean(results.avg_allocation) / 7.14;
+            handover_score = 1 - (sum(results.handovers) / (results.total_users(1) * 0.5));
+            handover_score = max(0, min(1, handover_score));
+            
+            composite_score = (fairness_score * 0.35) + (throughput_score * 0.40) + (handover_score * 0.25);
+            
+            if composite_score > best_score
+                best_score = composite_score;
+                best_checkpoint = struct();
+                best_checkpoint.episode = episode;
+                best_checkpoint.Q_table = agent.Q_table;
+                best_checkpoint.epsilon = agent.epsilon;
+                best_checkpoint.fairness = fairness_score;
+                best_checkpoint.throughput = mean(results.avg_allocation);
+                best_checkpoint.handovers = sum(results.handovers);
+                best_checkpoint.score = composite_score;
+                
+                checkpoint_dir = fullfile(base_dir, 'output', 'checkpoints');
+                if ~exist(checkpoint_dir, 'dir')
+                    mkdir(checkpoint_dir);
+                end
+                checkpoint_file = fullfile(checkpoint_dir, sprintf('checkpoint_ep%d.mat', episode));
+                save(checkpoint_file, '-struct', 'best_checkpoint');
+            end
+        end
+        
         if mod(episode, 50) == 0
-            fprintf('Ep %d/%d: Rew=%.2f Fair=%.3f HO=%d Eps=%.3f Cov=%.2f%%\n', ...
+            fprintf('Ep %d/%d: Rew=%.2f Fair=%.3f Tput=%.2f HO=%d Eps=%.3f Cov=%.2f%%\n', ...
                 episode, num_episodes, episode_reward, ...
-                mean(results.fairness), sum(results.handovers), agent.epsilon, ...
+                mean(results.fairness), mean(results.avg_allocation), ...
+                sum(results.handovers), agent.epsilon, ...
                 training_stats.q_coverage(episode));
         end
     end
     
     output_dir = fullfile(base_dir, 'output', 'data');
+    
+    if ~isempty(best_checkpoint)
+        agent.Q_table = best_checkpoint.Q_table;
+        agent.epsilon = best_checkpoint.epsilon;
+        
+        fprintf('\n✓ Best checkpoint loaded from Episode %d\n', best_checkpoint.episode);
+        fprintf('  Composite Score: %.4f\n', best_checkpoint.score);
+        fprintf('  Fairness:   %.3f\n', best_checkpoint.fairness);
+        fprintf('  Throughput: %.2f Mbps\n', best_checkpoint.throughput);
+        fprintf('  Handovers:  %d\n', best_checkpoint.handovers);
+        
+        training_stats.best_checkpoint = best_checkpoint;
+    else
+        fprintf('\n⚠ No checkpoint saved (training may be too short)\n');
+    end
+    
     agent.save(fullfile(output_dir, 'trained_agent.mat'));
     save(fullfile(output_dir, 'training_stats.mat'), 'training_stats');
     
