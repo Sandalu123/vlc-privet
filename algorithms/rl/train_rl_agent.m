@@ -22,6 +22,10 @@ function [agent, training_stats] = train_rl_agent(config)
         'state_dim', 4, ...
         'bins_per_dim', 4));
     
+    % Load config but override for training
+    config.num_episodes = 10000;
+    config.epsilon_decay = 0.9995; % Slower decay for more exploration
+    
     num_episodes = config.num_episodes;
     
     training_stats = struct();
