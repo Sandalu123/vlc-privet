@@ -1,5 +1,5 @@
 function actions = define_action_space_reduced()
-    handover_thresholds = [0.15, 0.20, 0.25, 0.30];
+    handover_thresholds = [0.25, 0.30, 0.35];
     wifi_ratios = [0.60, 0.70];
     weight_max_values = [6, 8];
     allocation_methods = {'wwa'};
