@@ -1,4 +1,11 @@
+function compare_all_methods(num_runs)
+    if nargin < 1
+        num_runs = 10;
+    end
     
+    fprintf('\n╔══════════════════════════════════════════════════════════════╗\n');
+    fprintf('║         Comparing All Allocation Methods                     ║\n');
+    fprintf('╚══════════════════════════════════════════════════════════════╝\n\n');
     script_dir = fileparts(mfilename('fullpath'));
     base_dir = fileparts(script_dir);
     
