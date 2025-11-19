@@ -31,7 +31,6 @@ function compare_all_methods(num_runs)
     
     comparison = struct();
     comparison.wwa = wwa_results;
-    comparison.proportional = []; % Removed
     comparison.rl = rl_results;
     
     output_dir = fullfile(base_dir, 'output', 'data');
