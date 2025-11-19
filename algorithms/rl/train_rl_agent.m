@@ -137,20 +137,20 @@ function [agent, training_stats] = train_rl_agent(config)
         checkpoints(i).filename = checkpoint_files(i).name;
     end
     
-    [~, idx] = sort([checkpoints.fairness], 'descend');
-    top_fairness = checkpoints(idx(1:min(20, length(idx))));
-    fprintf('Step 1: Selected top 20 by fairness\n');
+    % Calculate composite score for all checkpoints
+    % Score = Fairness * 100 + Throughput * 2 - Handovers * 1.5
+    for i = 1:length(checkpoints)
+        checkpoints(i).score = checkpoints(i).fairness * 100 + ...
+                               checkpoints(i).throughput * 2 - ...
+                               checkpoints(i).handovers * 1.5;
+    end
     
-    filtered = top_fairness([top_fairness.fairness] >= 0.92);
-    fprintf('Step 2: Filtered checkpoints with fairness >= 0.92 (%d remaining)\n', length(filtered));
+    [~, idx] = sort([checkpoints.score], 'descend');
+    top_10_candidates = checkpoints(idx(1:min(10, length(idx))));
     
-    if isempty(filtered)
-        fprintf('\n⚠ No suitable checkpoints found. Using best fairness checkpoint.\n');
-        selected_checkpoint = top_fairness(1);
-    else
-        [~, idx] = sort([filtered.throughput], 'descend');
-        top_10_candidates = filtered(idx(1:min(10, length(idx))));
-        fprintf('Step 3: Selected top 10 by throughput\n');
+    fprintf('Step 1: Calculated composite scores (Fair*100 + Tput*2 - HO*1.5)\n');
+    fprintf('Step 2: Selected top 10 candidates by score\n');
+    fprintf('Step 3: Evaluating candidates (3 runs each)...\n\n');
         fprintf('Step 4: Evaluating candidates (3 runs each)...\n\n');
         
         top_10 = [];
@@ -184,24 +184,25 @@ function [agent, training_stats] = train_rl_agent(config)
             top_10(i).throughput = mean(throughput_vals);
             top_10(i).handovers = mean(handover_vals);
             top_10(i).filename = top_10_candidates(i).filename;
+            top_10(i).score = top_10(i).fairness * 100 + top_10(i).throughput * 2 - top_10(i).handovers * 1.5;
             
-            fprintf('  Evaluated Ep %d: Fair=%.3f Tput=%.2f HO=%.1f\n', ...
-                top_10(i).episode, top_10(i).fairness, top_10(i).throughput, top_10(i).handovers);
+            fprintf('  Evaluated Ep %d: Fair=%.3f Tput=%.2f HO=%.1f Score=%.2f\n', ...
+                top_10(i).episode, top_10(i).fairness, top_10(i).throughput, top_10(i).handovers, top_10(i).score);
         end
         fprintf('\n');
         
         fprintf('╔════════════════════════════════════════════════════════════════════╗\n');
         fprintf('║                    Top 10 Checkpoints                              ║\n');
-        fprintf('╠════╦═════════╦═══════════╦═════════════╦════════════════════════╣\n');
-        fprintf('║ #  ║ Episode ║ Fairness  ║ Throughput  ║ Handovers              ║\n');
-        fprintf('╠════╬═════════╬═══════════╬═════════════╬════════════════════════╣\n');
+        fprintf('╠════╦═════════╦═══════════╦═════════════╦════════════════════════╦═══════════╣\n');
+        fprintf('║ #  ║ Episode ║ Fairness  ║ Throughput  ║ Handovers              ║ Score     ║\n');
+        fprintf('╠════╬═════════╬═══════════╬═════════════╬════════════════════════╬═══════════╣\n');
         
         for i = 1:length(top_10)
-            fprintf('║ %-2d ║ %-7d ║   %.4f  ║  %.2f Mbps  ║       %2d               ║\n', ...
+            fprintf('║ %-2d ║ %-7d ║   %.4f  ║  %.2f Mbps  ║       %2d               ║   %.2f    ║\n', ...
                 i, top_10(i).episode, top_10(i).fairness, ...
-                top_10(i).throughput, top_10(i).handovers);
+                top_10(i).throughput, top_10(i).handovers, top_10(i).score);
         end
-        fprintf('╚════╩═════════╩═══════════╩═════════════╩════════════════════════╝\n\n');
+        fprintf('╚════╩═════════╩═══════════╩═════════════╩════════════════════════╩═══════════╝\n\n');
         
         selection = input('Select checkpoint (1-10): ');
         while selection < 1 || selection > length(top_10)
