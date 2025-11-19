@@ -151,7 +151,64 @@ function [agent, training_stats] = train_rl_agent(config)
     fprintf('Step 1: Calculated composite scores (Fair*100 + Tput*2 - HO*1.5)\n');
     fprintf('Step 2: Selected top 10 candidates by score\n');
     fprintf('Step 3: Evaluating candidates (3 runs each)...\n\n');
-        selected_checkpoint = top_10(selection);
+    top_10 = [];
+    for i = 1:length(top_10_candidates)
+        cp_data = load(fullfile(checkpoint_dir, top_10_candidates(i).filename));
+        temp_agent = QLearningAgent(struct(...
+            'learning_rate', 0.01, ...
+            'gamma', 0.97, ...
+            'epsilon_start', 0.05, ...
+            'epsilon_decay', 1, ...
+            'epsilon_min', 0.05, ...
+            'num_actions', length(actions), ...
+            'state_dim', 4, ...
+            'bins_per_dim', 4));
+        temp_agent.Q_table = cp_data.Q_table;
+        temp_agent.epsilon = cp_data.epsilon;
+        
+        eval_results = rl_enhanced_simulation(temp_agent, 3);
+        
+        fairness_vals = [];
+        throughput_vals = [];
+        handover_vals = [];
+        for j = 1:length(eval_results)
+            fairness_vals(j) = mean(eval_results{j}.fairness);
+            throughput_vals(j) = mean(eval_results{j}.avg_allocation);
+            handover_vals(j) = sum(eval_results{j}.handovers);
+        end
+        
+        top_10(i).episode = top_10_candidates(i).episode;
+        top_10(i).fairness = mean(fairness_vals);
+        top_10(i).throughput = mean(throughput_vals);
+        top_10(i).handovers = mean(handover_vals);
+        top_10(i).filename = top_10_candidates(i).filename;
+        top_10(i).score = top_10(i).fairness * 100 + top_10(i).throughput * 2 - top_10(i).handovers * 1.5;
+        
+        fprintf('  Evaluated Ep %d: Fair=%.3f Tput=%.2f HO=%.1f Score=%.2f\n', ...
+            top_10(i).episode, top_10(i).fairness, top_10(i).throughput, top_10(i).handovers, top_10(i).score);
+    end
+    fprintf('\n');
+    
+    fprintf('╔════════════════════════════════════════════════════════════════════╗\n');
+    fprintf('║                    Top 10 Checkpoints                              ║\n');
+    fprintf('╠════╦═════════╦═══════════╦═════════════╦════════════════════════╦═══════════╣\n');
+    fprintf('║ #  ║ Episode ║ Fairness  ║ Throughput  ║ Handovers              ║ Score     ║\n');
+    fprintf('╠════╬═════════╬═══════════╬═════════════╬════════════════════════╬═══════════╣\n');
+    
+    for i = 1:length(top_10)
+        fprintf('║ %-2d ║ %-7d ║   %.4f  ║  %.2f Mbps  ║       %2d               ║   %.2f    ║\n', ...
+            i, top_10(i).episode, top_10(i).fairness, ...
+            top_10(i).throughput, top_10(i).handovers, top_10(i).score);
+    end
+    fprintf('╚════╩═════════╩═══════════╩═════════════╩════════════════════════╩═══════════╝\n\n');
+    
+    selection = input('Select checkpoint (1-10): ');
+    while selection < 1 || selection > length(top_10)
+        fprintf('Invalid selection. Please enter a number between 1 and %d\n', length(top_10));
+        selection = input('Select checkpoint (1-10): ');
+    end
+    
+    selected_checkpoint = top_10(selection);
     
     fprintf('\n--- Loading Selected Checkpoint ---\n');
     cp_data = load(fullfile(checkpoint_dir, selected_checkpoint.filename));
