@@ -37,6 +37,10 @@ function generate_comparison_report(comparison)
         improvement = (mean(comparison.rl.fairness) - best_baseline_fairness) / best_baseline_fairness * 100;
         fprintf(fid, '  Fairness Improvement: %+.2f%%\n', improvement);
         
+        best_baseline_throughput = mean(comparison.wwa.throughput);
+        t_improvement = (mean(comparison.rl.throughput) - best_baseline_throughput) / best_baseline_throughput * 100;
+        fprintf(fid, '  Throughput Improvement: %+.2f%%\n', t_improvement);
+        
         best_baseline_handovers = mean(comparison.wwa.handovers);
         reduction = (best_baseline_handovers - mean(comparison.rl.handovers)) / best_baseline_handovers * 100;
         fprintf(fid, '  Handover Reduction:   %+.2f%%\n\n', reduction);
