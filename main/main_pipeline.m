@@ -10,14 +10,13 @@ function main_pipeline()
     fprintf('Select operation mode:\n');
     fprintf('  1) Setup & Verify Environment\n');
     fprintf('  2) Run WWA Baseline Experiment\n');
-    fprintf('  3) Run Proportional Baseline Experiment\n');
-    fprintf('  4) Train RL Agent\n');
-    fprintf('  5) Run RL-Enhanced Simulation\n');
-    fprintf('  6) Compare All Methods\n');
-    fprintf('  7) Full Pipeline (All steps)\n');
-    fprintf('  8) Exit\n\n');
+    fprintf('  3) Train RL Agent\n');
+    fprintf('  4) Run RL-Enhanced Simulation\n');
+    fprintf('  5) Compare All Methods\n');
+    fprintf('  6) Full Pipeline (All steps)\n');
+    fprintf('  7) Exit\n\n');
     
-    choice = input('Enter choice (1-8): ');
+    choice = input('Enter choice (1-7): ');
     
     switch choice
         case 1
@@ -30,29 +29,24 @@ function main_pipeline()
             experiment_wwa_only();
             
         case 3
-            fprintf('\n=== Proportional Baseline ===\n');
-            addpath('experiments');
-            experiment_proportional_only();
-            
-        case 4
             fprintf('\n=== RL Training ===\n');
             addpath('experiments');
             experiment_rl_training();
             
-        case 5
+        case 4
             fprintf('\n=== RL-Enhanced Simulation ===\n');
             run_rl_enhanced();
             
-        case 6
+        case 5
             fprintf('\n=== Compare All Methods ===\n');
             addpath('experiments');
             experiment_full_comparison();
             
-        case 7
+        case 6
             fprintf('\n=== Full Pipeline ===\n');
             run_full_pipeline();
             
-        case 8
+        case 7
             fprintf('\nExiting...\n');
             return;
             
@@ -89,10 +83,9 @@ end
 function run_full_pipeline()
     fprintf('\nThis will run all experiments:\n');
     fprintf('  1. WWA Baseline (10 runs)\n');
-    fprintf('  2. Proportional Baseline (10 runs)\n');
-    fprintf('  3. RL Training (1000 episodes)\n');
-    fprintf('  4. RL Evaluation (10 runs)\n');
-    fprintf('  5. Full Comparison & Report\n\n');
+    fprintf('  2. RL Training (1000 episodes)\n');
+    fprintf('  3. RL Evaluation (10 runs)\n');
+    fprintf('  4. Full Comparison & Report\n\n');
     fprintf('Estimated time: 2-3 hours\n\n');
     
     proceed = input('Continue? (y/n): ', 's');
@@ -106,13 +99,10 @@ function run_full_pipeline()
     fprintf('\n--- Phase 1: WWA Baseline ---\n');
     experiment_wwa_only();
     
-    fprintf('\n--- Phase 2: Proportional Baseline ---\n');
-    experiment_proportional_only();
-    
-    fprintf('\n--- Phase 3: RL Training ---\n');
+    fprintf('\n--- Phase 2: RL Training ---\n');
     experiment_rl_training();
     
-    fprintf('\n--- Phase 4: Full Comparison ---\n');
+    fprintf('\n--- Phase 3: Full Comparison ---\n');
     experiment_full_comparison();
     
     fprintf('\n✓ Full pipeline complete!\n');

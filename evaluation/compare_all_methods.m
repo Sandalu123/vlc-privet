@@ -1,11 +1,3 @@
-function compare_all_methods(num_runs)
-    if nargin < 1
-        num_runs = 10;
-    end
-    
-    fprintf('\n╔══════════════════════════════════════════════════════════════╗\n');
-    fprintf('║         Comparing All Allocation Methods                     ║\n');
-    fprintf('╚══════════════════════════════════════════════════════════════╝\n\n');
     
     script_dir = fileparts(mfilename('fullpath'));
     base_dir = fileparts(script_dir);
@@ -18,8 +10,7 @@ function compare_all_methods(num_runs)
     wwa_results = run_baseline_experiments('wwa', num_runs);
     fprintf('✓ WWA baseline completed\n');
     
-    prop_results = run_baseline_experiments('proportional', num_runs);
-    fprintf('✓ Proportional baseline completed\n');
+    % Proportional baseline removed
     
     agent_path = fullfile(base_dir, 'output', 'data', 'trained_agent.mat');
     if isfile(agent_path)
@@ -33,7 +24,7 @@ function compare_all_methods(num_runs)
     
     comparison = struct();
     comparison.wwa = wwa_results;
-    comparison.proportional = prop_results;
+    comparison.proportional = []; % Removed
     comparison.rl = rl_results;
     
     output_dir = fullfile(base_dir, 'output', 'data');

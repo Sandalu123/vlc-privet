@@ -11,8 +11,6 @@ function allocations = allocate_resources(users, capacity, method)
     switch lower(method)
         case 'wwa'
             allocations = wwa_algorithm(users, capacity);
-        case 'proportional'
-            allocations = proportional_algorithm(users, capacity);
         otherwise
             error('Unknown allocation method: %s', method);
     end
