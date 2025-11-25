@@ -1,4 +1,4 @@
-function users = generate_hybrid_users(params, network, time_step)
+function users = create_hybrid_users(params, network, time_step)
     base_users = params.base_num_users;
     user_variation = round(sin(time_step * 0.2) * params.user_change_rate);
     num_users = max(5, base_users + user_variation);

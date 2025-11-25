@@ -8,7 +8,7 @@ addpath('algorithms/allocation');
 
 params = load_config();
 network = create_network(params);
-users = generate_hybrid_users(params, network, 1);
+users = create_hybrid_users(params, network, 1);
 
 fprintf('Checking Uplink Configuration:\n');
 fprintf('WiFi DL Capacity: %.2f\n', params.wifi_capacity);

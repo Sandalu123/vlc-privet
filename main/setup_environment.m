@@ -32,7 +32,7 @@ function setup_environment()
     required_files = {
         'load_config.m'
         'create_network.m'
-        'generate_hybrid_users.m'
+        'create_hybrid_users.m'
         'wwa_algorithm.m'
         'wwa_algorithm.m'
         'QLearningAgent.m'

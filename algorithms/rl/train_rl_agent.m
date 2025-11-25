@@ -57,7 +57,7 @@ function [agent, training_stats] = train_rl_agent(config)
         
         for t = 1:base_params.simulation_time
             if t == 1
-                users = generate_hybrid_users(base_params, network, t);
+                users = create_hybrid_users(base_params, network, t);
             else
                 users = update_user_movement(users, base_params, network);
             end

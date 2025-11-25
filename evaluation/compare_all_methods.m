@@ -56,8 +56,8 @@ function results = run_baseline_experiments(method, num_runs)
     
     for run = 1:num_runs
         res = baseline_simulation(method);
-        results.fairness(run) = mean(res.fairness);
-        results.throughput(run) = mean(res.avg_allocation);
+        results.fairness(run) = mean((res.fairness + res.fairness_ul) / 2);
+        results.throughput(run) = mean((res.avg_allocation + res.avg_allocation_ul) / 2);
         results.handovers(run) = sum(res.handovers);
     end
 end
@@ -70,8 +70,8 @@ function results = run_rl_experiments(agent, num_runs)
     
     for run = 1:num_runs
         res = rl_enhanced_simulation(agent);
-        results.fairness(run) = mean(res.fairness);
-        results.throughput(run) = mean(res.avg_allocation);
+        results.fairness(run) = mean((res.fairness + res.fairness_ul) / 2);
+        results.throughput(run) = mean((res.avg_allocation + res.avg_allocation_ul) / 2);
         results.handovers(run) = sum(res.handovers);
     end
 end

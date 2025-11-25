@@ -22,7 +22,7 @@ function results = run_single_simulation(allocation_method)
     
     for t = 1:params.simulation_time
         if t == 1
-            users = generate_hybrid_users(params, network, t);
+            users = create_hybrid_users(params, network, t);
         else
             users = update_user_movement(users, params, network);
         end
@@ -71,7 +71,7 @@ function results = run_multiple_simulations(allocation_method, num_runs)
         
         for t = 1:params.simulation_time
             if t == 1
-                users = generate_hybrid_users(params, network, t);
+                users = create_hybrid_users(params, network, t);
             else
                 users = update_user_movement(users, params, network);
             end

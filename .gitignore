@@ -1,3 +1,4 @@
 /output/data/*.mat
 /output/plots/*.png
 /output/reports/*.txt
+*.mat
