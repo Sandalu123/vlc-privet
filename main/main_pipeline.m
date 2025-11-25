@@ -1,3 +1,4 @@
+%test
 function main_pipeline()
     close all; clear; clc;
     warning('off', 'all');
