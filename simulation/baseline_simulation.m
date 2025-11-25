@@ -91,8 +91,8 @@ function results = run_multiple_simulations(allocation_method, num_runs)
             sim_results = record_results(sim_results, t, users, handover_count, params);
         end
         
-        all_fairness(run) = mean(sim_results.fairness);
-        all_throughput(run) = mean(sim_results.avg_allocation);
+        all_fairness(run) = mean((sim_results.fairness + sim_results.fairness_ul) / 2);
+        all_throughput(run) = mean((sim_results.avg_allocation + sim_results.avg_allocation_ul) / 2);
         all_handovers(run) = sum(sim_results.handovers);
         
         fprintf('Fairness: %.4f, Handovers: %d\n', all_fairness(run), all_handovers(run));

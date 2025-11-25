@@ -42,7 +42,7 @@ function experiment_rl_training()
         mkdir(output_dir);
     end
     
-    save(fullfile(output_dir, 'trained_agent.mat'), 'agent');
+    agent.save(fullfile(output_dir, 'trained_agent.mat'));
     save(fullfile(output_dir, 'training_stats.mat'), 'training_stats');
     
     plot_training_results(training_stats);

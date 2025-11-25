@@ -21,7 +21,15 @@ function compare_all_methods(num_runs)
     
     agent_path = fullfile(base_dir, 'output', 'data', 'trained_agent.mat');
     if isfile(agent_path)
-        load(agent_path, 'agent');
+        % Initialize a default agent first
+        temp_config = struct('learning_rate', 0.01, 'gamma', 0.97, 'epsilon_start', 0.05, ...
+                           'epsilon_decay', 1, 'epsilon_min', 0.05, 'num_actions', 8, ...
+                           'state_dim', 4, 'bins_per_dim', 4);
+        agent = QLearningAgent(temp_config);
+        
+        % Load parameters from file
+        agent.load(agent_path);
+        
         rl_results = run_rl_experiments(agent, num_runs);
         fprintf('✓ RL-enhanced completed\n');
     else
@@ -69,7 +77,9 @@ function results = run_rl_experiments(agent, num_runs)
     results.handovers = zeros(1, num_runs);
     
     for run = 1:num_runs
+        fprintf('  Run %d/%d... ', run, num_runs);
         res = rl_enhanced_simulation(agent);
+        fprintf('Done\n');
         results.fairness(run) = mean((res.fairness + res.fairness_ul) / 2);
         results.throughput(run) = mean((res.avg_allocation + res.avg_allocation_ul) / 2);
         results.handovers(run) = sum(res.handovers);

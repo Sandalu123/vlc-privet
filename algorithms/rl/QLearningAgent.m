@@ -109,12 +109,25 @@ classdef QLearningAgent < handle
         
         function load(obj, filename)
             data = load(filename);
-            obj.Q_table = data.Q_table;
-            if isfield(data, 'epsilon')
-                obj.epsilon = data.epsilon;
-            end
-            if isfield(data, 'state_counts')
-                obj.state_counts = data.state_counts;
+            if isfield(data, 'agent')
+                % Handle object-wrapped format
+                loaded_agent = data.agent;
+                obj.Q_table = loaded_agent.Q_table;
+                obj.epsilon = loaded_agent.epsilon;
+                obj.state_counts = loaded_agent.state_counts;
+                obj.learning_rate = loaded_agent.learning_rate;
+                obj.discount_factor = loaded_agent.discount_factor;
+                obj.state_dim = loaded_agent.state_dim;
+                obj.bins_per_dim = loaded_agent.bins_per_dim;
+            else
+                % Handle flat format
+                obj.Q_table = data.Q_table;
+                if isfield(data, 'epsilon')
+                    obj.epsilon = data.epsilon;
+                end
+                if isfield(data, 'state_counts')
+                    obj.state_counts = data.state_counts;
+                end
             end
         end
         

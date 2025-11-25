@@ -6,7 +6,9 @@ function results = rl_enhanced_simulation(agent, num_runs)
     all_results = cell(num_runs, 1);
     
     for run = 1:num_runs
-        fprintf('RL-Enhanced Run %d/%d...\n', run, num_runs);
+        if num_runs > 1
+            fprintf('RL-Enhanced Run %d/%d...\n', run, num_runs);
+        end
         
         addpath('../config');
         addpath('../core/network');
