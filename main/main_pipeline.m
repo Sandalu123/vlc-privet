@@ -1,5 +1,6 @@
 function main_pipeline()
     close all; clear; clc;
+    warning('off', 'all');
     
     fprintf('\n');
     fprintf('╔══════════════════════════════════════════════════════════════╗\n');

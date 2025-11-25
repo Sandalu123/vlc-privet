@@ -1,11 +1,21 @@
-function allocations = allocate_resources(users, capacity, method)
+function allocations = allocate_resources(users, capacity, method, direction)
     if nargin < 3
         method = 'wwa';
+    end
+    if nargin < 4
+        direction = 'downlink';
     end
     
     if isempty(users)
         allocations = [];
         return;
+    end
+    
+    % Prepare users for allocation based on direction
+    if strcmp(direction, 'uplink')
+        for i = 1:length(users)
+            users(i).request = users(i).request_ul;
+        end
     end
     
     switch lower(method)

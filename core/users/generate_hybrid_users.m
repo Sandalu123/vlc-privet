@@ -32,6 +32,9 @@ function users = generate_hybrid_users(params, network, time_step)
         bw_range = selected_service.bandwidth_range;
         users(i).request = bw_range(1) + rand() * (bw_range(2) - bw_range(1));
         
+        % Uplink Request (20-50% of Downlink)
+        users(i).request_ul = users(i).request * (0.2 + 0.3 * rand());
+        
         % QoS Requirements
         users(i).max_latency = selected_service.max_latency;
         users(i).max_jitter = selected_service.max_jitter;
@@ -39,6 +42,7 @@ function users = generate_hybrid_users(params, network, time_step)
         
         users(i).current_network = assign_initial_network(users(i).position, network);
         users(i).allocated_bandwidth = 0;
+        users(i).allocated_bandwidth_ul = 0;
     end
 end
 

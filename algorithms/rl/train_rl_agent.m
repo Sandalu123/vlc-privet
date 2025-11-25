@@ -22,8 +22,8 @@ function [agent, training_stats] = train_rl_agent(config)
         'state_dim', 4, ...
         'bins_per_dim', 4));
     
-    % Load config but override for training
-    config.num_episodes = 10000;
+    % Use config from arguments
+    % config.num_episodes = 10000; % Removed override
     config.epsilon_decay = 0.9995; % Slower decay for more exploration
     
     num_episodes = config.num_episodes;
@@ -42,7 +42,8 @@ function [agent, training_stats] = train_rl_agent(config)
     end
     mkdir(checkpoint_dir);
     
-    checkpoint_interval = 50;
+    % Create exactly 20 checkpoints
+    checkpoint_interval = floor(num_episodes / 20);
     
     for episode = 1:num_episodes
         base_params = load_config();
@@ -67,9 +68,16 @@ function [agent, training_stats] = train_rl_agent(config)
             
             [users, handover_count] = perform_handover(users, network, params);
             [wifi_users, vlc_users] = split_users_by_network(users);
-            wifi_alloc = allocate_resources(wifi_users, params.wifi_capacity, params.allocation_method);
-            vlc_alloc = allocate_resources(vlc_users, params.vlc_capacity, params.allocation_method);
-            users = merge_allocations(users, wifi_users, vlc_users, wifi_alloc, vlc_alloc);
+            
+            % Downlink Allocation
+            wifi_alloc = allocate_resources(wifi_users, params.wifi_capacity, params.allocation_method, 'downlink');
+            vlc_alloc = allocate_resources(vlc_users, params.vlc_capacity, params.allocation_method, 'downlink');
+            
+            % Uplink Allocation
+            wifi_alloc_ul = allocate_resources(wifi_users, params.wifi_capacity_ul, params.allocation_method, 'uplink');
+            vlc_alloc_ul = allocate_resources(vlc_users, params.vlc_capacity_ul, params.allocation_method, 'uplink');
+            
+            users = merge_allocations(users, wifi_users, vlc_users, wifi_alloc, vlc_alloc, wifi_alloc_ul, vlc_alloc_ul);
             
             results = record_results(results, t, users, handover_count, params);
             
@@ -149,7 +157,7 @@ function [agent, training_stats] = train_rl_agent(config)
     top_candidates = checkpoints(idx(1:min(20, length(idx))));
     
     fprintf('Step 1: Calculated composite scores based on training stats\n');
-    fprintf('Step 2: Selected top 20 candidates\n');
+    fprintf('Step 2: Selected top %d candidates\n', length(top_candidates));
     fprintf('Step 3: Evaluating candidates (10 runs each) to recalculate scores...\n\n');
     
     evaluated_candidates = [];
@@ -199,7 +207,7 @@ function [agent, training_stats] = train_rl_agent(config)
     evaluated_candidates = evaluated_candidates(idx);
 
     fprintf('╔════════════════════════════════════════════════════════════════════╗\n');
-    fprintf('║                    Top 20 Checkpoints (Evaluated)                  ║\n');
+    fprintf('║                    Top %d Checkpoints (Evaluated)                  ║\n', length(evaluated_candidates));
     fprintf('╠════╦═════════╦═══════════╦═════════════╦════════════════════════╦═══════════╣\n');
     fprintf('║ #  ║ Episode ║ Fairness  ║ Throughput  ║ Handovers              ║ Score     ║\n');
     fprintf('╠════╬═════════╬═══════════╬═════════════╬════════════════════════╬═══════════╣\n');
@@ -234,6 +242,17 @@ function [agent, training_stats] = train_rl_agent(config)
     
     agent.save(fullfile(output_dir, 'trained_agent.mat'));
     save(fullfile(output_dir, 'training_stats.mat'), 'training_stats');
+    
+    % Custom Checkpoint Saving
+    save_custom = input('Do you want to replace the Custom Best Model with this checkpoint? (y/n): ', 's');
+    if strcmpi(save_custom, 'y')
+        custom_dir = fullfile(base_dir, 'output', 'custom_checkpoint');
+        if ~exist(custom_dir, 'dir')
+            mkdir(custom_dir);
+        end
+        agent.save(fullfile(custom_dir, 'best_model.mat'));
+        fprintf('✓ Saved to: %s\n', fullfile(custom_dir, 'best_model.mat'));
+    end
     
     fprintf('\nTraining complete!\n');
 end

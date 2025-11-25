@@ -66,6 +66,10 @@ function params = load_config()
     params.vlc_capacity_ratio = 0.3;
     params.wifi_capacity = params.total_capacity * params.wifi_capacity_ratio;
     params.vlc_capacity = params.total_capacity * params.vlc_capacity_ratio;
+    
+    % Uplink Capacity (50% of Downlink)
+    params.wifi_capacity_ul = params.wifi_capacity * 0.5;
+    params.vlc_capacity_ul = params.vlc_capacity * 0.5;
     params.handover_threshold = 0.15;
     params.user_velocity_range = [-0.25, 0.25];
     

@@ -1,5 +1,6 @@
 function setup_environment()
     close all; clc;
+    warning('off', 'all');
     
     fprintf('\n');
     fprintf('╔══════════════════════════════════════════════════════════════╗\n');
@@ -33,7 +34,7 @@ function setup_environment()
         'create_network.m'
         'generate_hybrid_users.m'
         'wwa_algorithm.m'
-        'proportional_algorithm.m'
+        'wwa_algorithm.m'
         'QLearningAgent.m'
         'baseline_simulation.m'
     };

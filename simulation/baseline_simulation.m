@@ -31,10 +31,15 @@ function results = run_single_simulation(allocation_method)
         
         [wifi_users, vlc_users] = split_users_by_network(users);
         
-        wifi_alloc = allocate_resources(wifi_users, params.wifi_capacity, allocation_method);
-        vlc_alloc = allocate_resources(vlc_users, params.vlc_capacity, allocation_method);
+        % Downlink Allocation
+        wifi_alloc = allocate_resources(wifi_users, params.wifi_capacity, allocation_method, 'downlink');
+        vlc_alloc = allocate_resources(vlc_users, params.vlc_capacity, allocation_method, 'downlink');
         
-        users = merge_allocations(users, wifi_users, vlc_users, wifi_alloc, vlc_alloc);
+        % Uplink Allocation
+        wifi_alloc_ul = allocate_resources(wifi_users, params.wifi_capacity_ul, allocation_method, 'uplink');
+        vlc_alloc_ul = allocate_resources(vlc_users, params.vlc_capacity_ul, allocation_method, 'uplink');
+        
+        users = merge_allocations(users, wifi_users, vlc_users, wifi_alloc, vlc_alloc, wifi_alloc_ul, vlc_alloc_ul);
         
         results = record_results(results, t, users, handover_count, params);
         
@@ -74,10 +79,15 @@ function results = run_multiple_simulations(allocation_method, num_runs)
             [users, handover_count] = perform_handover(users, network, params);
             [wifi_users, vlc_users] = split_users_by_network(users);
             
-            wifi_alloc = allocate_resources(wifi_users, params.wifi_capacity, allocation_method);
-            vlc_alloc = allocate_resources(vlc_users, params.vlc_capacity, allocation_method);
+            % Downlink Allocation
+            wifi_alloc = allocate_resources(wifi_users, params.wifi_capacity, allocation_method, 'downlink');
+            vlc_alloc = allocate_resources(vlc_users, params.vlc_capacity, allocation_method, 'downlink');
             
-            users = merge_allocations(users, wifi_users, vlc_users, wifi_alloc, vlc_alloc);
+            % Uplink Allocation
+            wifi_alloc_ul = allocate_resources(wifi_users, params.wifi_capacity_ul, allocation_method, 'uplink');
+            vlc_alloc_ul = allocate_resources(vlc_users, params.vlc_capacity_ul, allocation_method, 'uplink');
+            
+            users = merge_allocations(users, wifi_users, vlc_users, wifi_alloc, vlc_alloc, wifi_alloc_ul, vlc_alloc_ul);
             sim_results = record_results(sim_results, t, users, handover_count, params);
         end
         

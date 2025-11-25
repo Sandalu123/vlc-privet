@@ -19,4 +19,21 @@ function results = record_results(results, t, users, handover_count, params)
         results.fairness(t) = 0.5;
     end
     results.avg_allocation(t) = mean(allocations);
+    
+    % Uplink Metrics
+    requests_ul = [users.request_ul];
+    allocations_ul = [users.allocated_bandwidth_ul];
+    if ~isempty(requests_ul) && sum(requests_ul) > 0 && sum(allocations_ul) > 0
+        ratios_ul = allocations_ul ./ max(requests_ul, 0.01);
+        ratios_ul(isinf(ratios_ul)) = 0;
+        ratios_ul(isnan(ratios_ul)) = 0;
+        if sum(ratios_ul.^2) > 0
+            results.fairness_ul(t) = (sum(ratios_ul))^2 / (length(users) * sum(ratios_ul.^2));
+        else
+            results.fairness_ul(t) = 0.5;
+        end
+    else
+        results.fairness_ul(t) = 0.5;
+    end
+    results.avg_allocation_ul(t) = mean(allocations_ul);
 end
