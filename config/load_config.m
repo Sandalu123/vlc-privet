@@ -73,6 +73,7 @@ function params = load_config()
     params.handover_threshold = 0.15;
     params.user_velocity_range = [-0.25, 0.25];
     
+    % Handover Calculation Parameters (VLC/WiFi AP Characteristics)
     params.qos_weights = [0.4, 0.3, 0.2, 0.1];
     params.wifi_base_delay = 5;
     params.vlc_base_delay = 2;
