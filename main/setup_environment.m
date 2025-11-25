@@ -58,7 +58,8 @@ function setup_environment()
     
     try
         params = load_config();
-        fprintf('  ✓ load_config() works\n');
+        params = load_config();
+        fprintf('  ✓ load_config() works (Version: %s)\n', params.version);
     catch ME
         fprintf('  ✗ load_config() failed: %s\n', ME.message);
         return;
@@ -73,10 +74,10 @@ function setup_environment()
     end
     
     try
-        users = generate_hybrid_users(params, network, 1);
-        fprintf('  ✓ generate_hybrid_users() works - %d users created\n', length(users));
+        users = create_hybrid_users(params, network, 1);
+        fprintf('  ✓ create_hybrid_users() works - %d users created\n', length(users));
     catch ME
-        fprintf('  ✗ generate_hybrid_users() failed: %s\n', ME.message);
+        fprintf('  ✗ create_hybrid_users() failed: %s\n', ME.message);
         return;
     end
     

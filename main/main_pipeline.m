@@ -2,10 +2,19 @@ function main_pipeline()
     close all; clear; clc;
     warning('off', 'all');
     
+    % Load version from config
+    addpath('config');
+    try
+        params = load_config();
+        version_str = params.version;
+    catch
+        version_str = 'Unknown';
+    end
+
     fprintf('\n');
     fprintf('╔══════════════════════════════════════════════════════════════╗\n');
     fprintf('║     VLC-WiFi Hybrid Network - Main Execution Pipeline       ║\n');
-    fprintf('║                      Version 2.0                             ║\n');
+    fprintf('║                      Version %-7s                        ║\n', version_str);
     fprintf('╚══════════════════════════════════════════════════════════════╝\n\n');
     
     fprintf('Select operation mode:\n');

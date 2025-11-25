@@ -1,6 +1,7 @@
 function params = load_config()
     params = struct();
     
+    params.version = '2.0.1';
     params.total_capacity = 1000; % Increased for B5G scenarios
     params.simulation_time = 50;
     params.base_num_users = 20;
