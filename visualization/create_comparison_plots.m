@@ -1,4 +1,4 @@
-function generate_comparison_plots(comparison)
+function create_comparison_plots(comparison)
     figure('Position', [100, 100, 1400, 600]);
     
     subplot(1, 3, 1);

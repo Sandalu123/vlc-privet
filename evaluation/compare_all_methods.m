@@ -39,7 +39,7 @@ function compare_all_methods(num_runs)
     end
     save(fullfile(output_dir, 'comparison_results.mat'), 'comparison');
     
-    generate_comparison_plots(comparison);
+    create_comparison_plots(comparison);
     generate_comparison_report(comparison);
     
     fprintf('\n✓ Comparison complete!\n');
