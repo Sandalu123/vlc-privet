@@ -132,6 +132,36 @@ function [agent, training_stats] = train_rl_agent(config)
     fprintf('║              Checkpoint Selection Process                    ║\n');
     fprintf('╚══════════════════════════════════════════════════════════════╝\n\n');
     
+    % Calculate statistics from exploitation phase (last 2000-3000 episodes)
+    % If we have fewer than 3000 episodes, use the last 30%
+    if num_episodes > 3000
+        stats_start_idx = num_episodes - 3000 + 1;
+    else
+        stats_start_idx = floor(num_episodes * 0.7) + 1;
+    end
+    
+    stats_range = stats_start_idx:num_episodes;
+    
+    % Calculate Mean and Std for Z-score normalization
+    stats_mean_fairness = mean(training_stats.episode_fairness(stats_range));
+    stats_std_fairness = std(training_stats.episode_fairness(stats_range));
+    
+    stats_mean_throughput = mean(training_stats.episode_throughput(stats_range));
+    stats_std_throughput = std(training_stats.episode_throughput(stats_range));
+    
+    stats_mean_handovers = mean(training_stats.episode_handovers(stats_range));
+    stats_std_handovers = std(training_stats.episode_handovers(stats_range));
+    
+    % Avoid division by zero
+    if stats_std_fairness == 0, stats_std_fairness = 1; end
+    if stats_std_throughput == 0, stats_std_throughput = 1; end
+    if stats_std_handovers == 0, stats_std_handovers = 1; end
+    
+    fprintf('Exploitation Phase Statistics (Ep %d-%d):\n', stats_start_idx, num_episodes);
+    fprintf('  Fairness:   Mean=%.4f, Std=%.4f\n', stats_mean_fairness, stats_std_fairness);
+    fprintf('  Throughput: Mean=%.2f, Std=%.2f\n', stats_mean_throughput, stats_std_throughput);
+    fprintf('  Handovers:  Mean=%.2f, Std=%.2f\n\n', stats_mean_handovers, stats_std_handovers);
+
     checkpoint_files = dir(fullfile(checkpoint_dir, 'checkpoint_ep*.mat'));
     fprintf('Loading %d checkpoints...\n', length(checkpoint_files));
     
@@ -145,18 +175,20 @@ function [agent, training_stats] = train_rl_agent(config)
         checkpoints(i).filename = checkpoint_files(i).name;
     end
     
-    % Calculate composite score for all checkpoints
-    % Score = Fairness * 100 + Throughput * 2 - Handovers * 1.5
+    % Calculate composite score for all checkpoints using Z-scores
+    % Score = Z_Fairness + Z_Throughput - Z_Handovers
     for i = 1:length(checkpoints)
-        checkpoints(i).score = checkpoints(i).fairness * 100 + ...
-                               checkpoints(i).throughput * 2 - ...
-                               checkpoints(i).handovers * 1.5;
+        z_fairness = (checkpoints(i).fairness - stats_mean_fairness) / stats_std_fairness;
+        z_throughput = (checkpoints(i).throughput - stats_mean_throughput) / stats_std_throughput;
+        z_handovers = (checkpoints(i).handovers - stats_mean_handovers) / stats_std_handovers;
+        
+        checkpoints(i).score = z_fairness + z_throughput - z_handovers;
     end
     
     [~, idx] = sort([checkpoints.score], 'descend');
     top_candidates = checkpoints(idx(1:min(20, length(idx))));
     
-    fprintf('Step 1: Calculated composite scores based on training stats\n');
+    fprintf('Step 1: Calculated Z-scores based on training stats\n');
     fprintf('Step 2: Selected top %d candidates\n', length(top_candidates));
     fprintf('Step 3: Evaluating candidates (10 runs each) to recalculate scores...\n\n');
     
@@ -191,9 +223,13 @@ function [agent, training_stats] = train_rl_agent(config)
         evaluated_candidates(i).throughput = mean(throughput_vals);
         evaluated_candidates(i).handovers = mean(handover_vals);
         evaluated_candidates(i).filename = top_candidates(i).filename;
-        evaluated_candidates(i).score = evaluated_candidates(i).fairness * 100 + ...
-                                      evaluated_candidates(i).throughput * 2 - ...
-                                      evaluated_candidates(i).handovers * 1.5;
+        
+        % Recalculate Score using the same Z-score normalization parameters
+        z_fairness = (evaluated_candidates(i).fairness - stats_mean_fairness) / stats_std_fairness;
+        z_throughput = (evaluated_candidates(i).throughput - stats_mean_throughput) / stats_std_throughput;
+        z_handovers = (evaluated_candidates(i).handovers - stats_mean_handovers) / stats_std_handovers;
+        
+        evaluated_candidates(i).score = z_fairness + z_throughput - z_handovers;
         
         fprintf('  Evaluated Ep %d: Fair=%.3f Tput=%.2f HO=%.1f Score=%.2f\n', ...
             evaluated_candidates(i).episode, evaluated_candidates(i).fairness, ...
@@ -209,7 +245,7 @@ function [agent, training_stats] = train_rl_agent(config)
     fprintf('╔════════════════════════════════════════════════════════════════════╗\n');
     fprintf('║                    Top %d Checkpoints (Evaluated)                  ║\n', length(evaluated_candidates));
     fprintf('╠════╦═════════╦═══════════╦═════════════╦════════════════════════╦═══════════╣\n');
-    fprintf('║ #  ║ Episode ║ Fairness  ║ Throughput  ║ Handovers              ║ Score     ║\n');
+    fprintf('║ #  ║ Episode ║ Fairness  ║ Throughput  ║ Handovers              ║ Z-Score   ║\n');
     fprintf('╠════╬═════════╬═══════════╬═════════════╬════════════════════════╬═══════════╣\n');
     
     for i = 1:length(evaluated_candidates)
