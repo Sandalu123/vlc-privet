@@ -172,7 +172,9 @@ Even (n=4): [r1+r4], [r2+r3]
 - Handover count
 - User distribution (WiFi/VLC)
 - **Fairness Index (Downlink):** Jain's Fairness Index
+- **Fairness Index (Downlink):** Jain's Fairness Index
 - **Fairness Index (Uplink):** Jain's Fairness Index for uplink
+- **Service Metrics:** Average Bandwidth, Latency, Jitter, and BER per service type
 - Average bandwidth allocation (downlink and uplink)
 
 **Fairness Formula:**
@@ -277,6 +279,16 @@ Low Handover Bonus: 30 or 60 (if <20% or <10% handover rate)
 - weight_range
 - qos_weights
 
+- qos_weights
+
+### find_optimal_weights.m - DYNAMIC SCORING WEIGHTS
+**Location:** `algorithms/rl/find_optimal_weights.m`
+**Purpose:** Calculates optimal scoring weights using Grid Search on training data
+**Logic:**
+- Normalizes Fairness, Throughput, and Handovers to [0, 1]
+- Performs Grid Search on simplex (x+y+z=1) to maximize combined score
+- Returns optimal weights for checkpoint selection
+
 ---
 
 ## 8. RL AGENT
@@ -338,15 +350,14 @@ state_dim: 4 (key features)
 
 **Checkpoint Selection Process:**
 1. Create 20 checkpoints throughout training
-2. Calculate statistics (mean, std) for Fairness, Throughput, and Handovers from the exploitation phase (last 2000-3000 episodes)
-3. Calculate Z-scores for each checkpoint: `Score = Z_Fairness + Z_Throughput - Z_Handovers`
-   - Where `Z = (Value - Mean) / Std`
-4. Select top 20 candidates based on Z-score
-5. Re-evaluate each candidate with 10 simulation runs
-6. Recalculate scores using the same Z-score normalization parameters
-7. Display top candidates in table format
-8. User selects best checkpoint interactively
-9. Load selected checkpoint as final agent
+2. Extract statistics (Fairness, Throughput, Handovers) from exploitation phase (last 2000-3000 episodes)
+3. **Dynamic Weight Calculation:** Use `find_optimal_weights` to determine optimal weights (x, y, z) that maximize the score on training data
+4. Calculate scores for each checkpoint: `Score = x*Norm(Fairness) + y*Norm(Throughput) + z*(1-Norm(Handovers))`
+5. Select top 20 candidates based on this score
+6. Re-evaluate each candidate with 10 simulation runs
+7. Recalculate scores using the same weights and normalization parameters
+8. Display top candidates in table format
+9. User selects best checkpoint interactively
 10. Option to save as custom best model
 
 **Training Outputs:**
@@ -435,6 +446,15 @@ state_dim: 4 (key features)
 ### create_comparison_plots.m
 **Location:** `visualization/create_comparison_plots.m`  
 **Purpose:** Comparison plots between methods
+
+### plot_service_qos.m
+**Location:** `visualization/plot_service_qos.m`
+**Purpose:** Visualizes QoS metrics per service type
+**Panels:**
+1. Average Bandwidth per Service
+2. Average Latency per Service
+3. Average Jitter per Service
+4. Average BER per Service (Log Scale)
 
 ---
 
