@@ -86,6 +86,7 @@ function run_rl_enhanced()
     results = rl_enhanced_simulation(agent);
     
     plot_simulation_results(results, 'RL-Enhanced Simulation');
+    plot_service_qos(results, 'RL-Enhanced Service QoS');
     
     fprintf('\n✓ RL-Enhanced simulation complete!\n');
     fprintf('  Plot saved to: output/plots/\n');
