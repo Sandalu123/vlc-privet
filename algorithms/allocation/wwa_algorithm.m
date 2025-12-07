@@ -6,7 +6,7 @@ function allocations = wwa_algorithm(users, total_capacity)
     
     n = length(users);
     requests = [users.request];
-    weights = [users.weight];
+    weights = ones(1, n);
     
     if mod(n, 2) == 1
         unions = create_odd_unions(requests, n);
