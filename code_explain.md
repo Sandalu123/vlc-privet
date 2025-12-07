@@ -1,87 +1,100 @@
-# VLC-WiFi Hybrid Network
+# VLC-WiFi Hybrid Network System - Code Explanation
+
+**Version:** 2.0.1  
+**System:** B5G/6G VLC-WiFi Hybrid Network with Uplink Support
+
+---
 
 ## 1. CORE CONFIGURATION & SETUP
 
-## load_config.m
+### load_config.m
+**Location:** `config/load_config.m`  
+**Purpose:** Central configuration file defining all system parameters
 
-**Purpose** : Central configuration file that defines all system parameters
-**Key Parameters** :
+**Key Parameters:**
+- Version: 2.0.1
+- Total Capacity: 1000 Mbps
+- Simulation Time: 50 steps
+- Base Users: 20 (±5 variation)
+- Room Size: 20m × 20m
+- WiFi Capacity Ratio: 70% (downlink), 50% uplink ratio
+- VLC Capacity Ratio: 30% (downlink), 50% uplink ratio
+- Handover Threshold: 0.15
+- QoS Weights: [0.4, 0.3, 0.2, 0.1] (Bandwidth, Delay, Jitter, BER)
 
-- Network capacity: 1000 Mbps (total)
-- Simulation time: 50 steps
-- User base: 20 users with ±5 variation
-- Room size: 20m × 20m
-- WiFi/VLC AP positions and coverage radii
-- QoS weights: [0.4, 0.3, 0.2, 0.1] (Bandwidth, Delay, Jitter, BER)
-- Handover threshold: 0.15
-- Resource ratio: WiFi 70%, VLC 30%
+**Service Profiles (B5G/6G Use Cases):**
 
-**Location in Code** : Line 1-43 of load_config.m
+| Service | Bandwidth (Mbps) | Max Latency (ms) | Max Jitter (ms) | Max BER | Priority |
+|---------|------------------|------------------|-----------------|---------|----------|
+| Web Browsing | 1-3 | 100 | 50 | 1e-5 | 1 |
+| Video Streaming (4K) | 15-25 | 50 | 20 | 1e-6 | 5 |
+| Online Gaming | 2-5 | 20 | 10 | 1e-5 | 7 |
+| VR/AR | 50-100 | 10 | 5 | 1e-7 | 9 |
+| Industrial Automation | 1-10 | 1 | 1 | 1e-9 | 10 |
+
+**Service Distribution:** [30%, 30%, 20%, 10%, 10%]
+
+---
 
 ## 2. NETWORK & USER GENERATION
 
-## create_network.m
+### create_network.m
+**Location:** `core/network/create_network.m`  
+**Purpose:** Creates network structure with AP positions and coverage  
+**Outputs:** Network struct with WiFi/VLC AP positions, coverage radii, capacities
 
-**Purpose** : Creates network structure with AP positions and coverage
-**Outputs** : Network struct with WiFi/VLC AP positions, coverage radius, capacities
-**File Size** : 12 lines
+**Network Configuration:**
+- WiFi APs: 2 positions at [5,15], [15,15]
+- VLC APs: 3 positions at [5,5], [10,10], [15,5]
+- WiFi Coverage Radius: 12m
+- VLC Coverage Radius: 4m
 
-## create_hybrid_users.m
+### create_hybrid_users.m
+**Location:** `core/users/create_hybrid_users.m`  
+**Purpose:** Generates users with dynamic position, service type, and QoS requirements
 
-**Purpose** : Generates users with dynamic position, velocity, weight, bandwidth requests
-**Key Features** :
-
-- Random user positioning in room
-- Random velocity (±0.25 m/step)
-- User weight: 1-10 (priority)
-- Bandwidth request: Based on Service Profile (e.g., Video 15-25 Mbps)
-- Uplink Request: 20-50% of Downlink request
+**Key Features:**
+- User count varies sinusoidally: `base ± sin(t*0.2) * variation`
+- Random positioning in 20m × 20m room
+- Random velocity: ±0.25 m/step
+- Service-based bandwidth assignment
+- Downlink request: Based on service profile range
+- Uplink request: 20-50% of downlink request
+- Priority weight: From service profile (1-10)
 - Initial network assignment (VLC if within coverage, else WiFi)
 
-
-**Location** : Lines 1-47 of create_hybrid_users.m
+**User Properties:**
+```matlab
+- id, position, velocity
+- service_type, weight
+- request (downlink), request_ul (uplink)
+- max_latency, max_jitter, max_ber
+- current_network
+- allocated_bandwidth, allocated_bandwidth_ul
+```
 
 ### update_user_movement.m
+**Location:** `core/users/update_user_movement.m`  
+**Purpose:** Updates user positions with boundary reflection
 
-**Purpose** : Updates user positions each time step with boundary reflection
-**Mechanics** : Users bounce off room boundaries
+---
 
 ## 3. HANDOVER MANAGEMENT
 
-### perform_handover.m PROPOSED ALGORITHM
+### perform_handover.m - PROPOSED FUZZY LOGIC ALGORITHM
+**Location:** `core/network/perform_handover.m`  
+**Purpose:** Implements fuzzy logic-based handover mechanism
 
-### #
+**Algorithm Steps:**
 
-**Purpose** : Implements fuzzy logic-based handover mechanism
-**Algorithm Steps** :
+1. **Find Available Networks:** Check WiFi and VLC coverage for each user
+2. **Calculate QoS Metrics:**
+   - Bandwidth: `max_bw * (1 - 0.7*dist/max_range) * (0.9-1.2 random)`
+   - Delay: `base_delay + (dist/max_range)*10 + random*2`
+   - Jitter: `base_jitter + (dist/max_range)*5 + random`
+   - BER: `1e-6 * (1 + dist/max_range*10)`
 
-1. Find available networks for each user (within coverage radius)
-2. Calculate QoS for each network:
-
-```
-o Bandwidth: max_bw * (1 - 0.7*dist/max_range) * (0.9-1.2 random)
-```
-```
-o Delay: base_delay + (dist/max_range)*10 + random*2
-o Jitter: base_jitter + (dist/max_range)*5 + random
-```
-```
-o BER: 1e-6 * (1 + dist/max_range*10)
-```
-3. Apply fuzzy scoring: fuzzy_score() function (Lines 87-96)
-
-```
-o Normalizes all QoS metrics
-```
-```
-o Weights: [0.4, 0.3, 0.2, 0.1]
-o Formula: score = 0.4*bw_norm + 0.3*delay_norm + 0.2*jitter_norm + 0.1*ber_norm
-```
-4. Handover occurs if: best_score > current_score + handover_threshold
-
-
-**Key Code Section** :
-
+3. **Apply Fuzzy Scoring:**
 ```matlab
 function score = fuzzy_score(qos)
     bw_norm = min(1, max(0, qos.bandwidth / 30));
@@ -90,595 +103,542 @@ function score = fuzzy_score(qos)
     ber_norm = max(0, min(1, 1 - log10(max(qos.ber, 1e-10)) / -3));
     
     weights = [0.4, 0.3, 0.2, 0.1];
-    score = weights(1) * bw_norm + weights(2) * delay_norm + ...
-            weights(3) * jitter_norm + weights(4) * ber_norm;
+    score = 0.4*bw_norm + 0.3*delay_norm + 0.2*jitter_norm + 0.1*ber_norm;
 end
 ```
 
+4. **Handover Decision:** `if best_score > current_score + threshold: handover`
+
+---
+
 ## 4. RESOURCE ALLOCATION
 
-## ALGORITHMS
+### wwa_algorithm.m - PROPOSED WWA ALGORITHM
+**Location:** `algorithms/allocation/wwa_algorithm.m`  
+**Purpose:** Weight-weighted allocation with reduced dynamic range  
+**Full Name:** Weight-based allocation with weighted unions
 
-### wwa_algorithm.m PROPOSED ALGORITHM #2 -
+**Algorithm Steps:**
 
-### WWA
+1. **Create Unions:**
+   - Odd users (n=5): [r1+r5], [r2+r4], [2*r3]
+   - Even users (n=4): [r1+r4], [r2+r3]
 
-**Purpose** : Weight-weighted allocation with reduced dynamic range
-**Full Name** : Weight-based allocation with weighted unions to reduce dynamic range
+2. **Group Allocation:**
+   - Sum each union's request rates
+   - Allocate bandwidth proportionally: `(union_totals / total_demand) * capacity`
 
-**Algorithm Implementation** :
+3. **User-Level Allocation:**
+   - Within each group, distribute by user weight
+   - Formula: `group_bw * (user_weight / group_weight_sum)`
 
-Input: users[], total_capacity
-Output: allocations[]
+4. **Request Capping:**
+   - Cap allocation at user request: `min(allocation, request)`
 
-Step 1: Create Unions
-
-- If odd users: pair from start/end, middle gets 2x
-- If even users: pair from start/end
-
-Step 2: Group Allocation
-
-- Sum each union's request rates
-- Allocate bandwidth to each group proportionally
-
-Step 3: User-Level Allocation Within Groups
-
-- Distribute group bandwidth by user weight
-
-Step 4: Recycle Leftover
-
-- If user gets more than requested, collect surplus
-- Reassign surplus to needy users
-- Recalculate weights among remaining users
-- Repeat until convergence
-
-**Union Creation Logic** :
-
-
-- **Odd case** (n=5): [r1+r5], [r2+r4], [2*r3]
-- **Even case** (n=4): [r1+r4], [r2+r3]
-
-This reduces dynamic range by grouping extreme requests together.
+**Union Creation Logic:**
+```matlab
+Odd (n=5):  [r1+r5], [r2+r4], [2*r3]
+Even (n=4): [r1+r4], [r2+r3]
+```
 
 ### allocate_resources.m
+**Location:** `algorithms/allocation/allocate_resources.m`  
+**Purpose:** Router function for resource allocation supporting downlink/uplink
 
-**Purpose** : Router function that calls active allocation algorithm
-**Switchable Between** :
+**Supported Methods:**
+- `wwa` - Weight-weighted allocation (proposed)
+- Other allocation methods can be added
 
-- WBA (Weight-Based Allocation) - simpler method
-- WWA (Weight-weighted Allocation) - proposed method
-- Proportional allocation - baseline
+**Direction Support:** `'downlink'` or `'uplink'`
 
-**Controlled by** : set_allocation_method.m
-
-### set_allocation_method.m
-
-**Purpose** : Dynamically rewrites allocate_resources.m to use selected algorithm
-**Methods** : 'wwa' | 'proportional' | 'wba'
+---
 
 ## 5. NETWORK SIMULATION CORE
 
 ### split_users_by_network.m
-
-**Purpose** : Separates users into WiFi (network_id=1) and VLC (network_id>1) groups
+**Location:** `core/utils/split_users_by_network.m`  
+**Purpose:** Separates users into WiFi (network_id=1) and VLC (network_id>1)
 
 ### merge_allocations.m
-
-**Purpose** : Combines WiFi and VLC allocations back into user array
+**Location:** `core/utils/merge_allocations.m`  
+**Purpose:** Combines WiFi and VLC allocations back into user array  
+**Supports:** Both downlink and uplink allocations
 
 ### record_results.m
+**Location:** `core/utils/record_results.m`  
+**Purpose:** Logs metrics per time step
 
-**Purpose** : Logs metrics per time step
-**Metrics Tracked** :
-
+**Metrics Tracked:**
 - Handover count
-- WiFi/VLC user distribution
-- **Fairness index** : (sum(ratios))² / (N * sum(ratios²))
+- User distribution (WiFi/VLC)
+- **Fairness Index (Downlink):** Jain's Fairness Index
+- **Fairness Index (Uplink):** Jain's Fairness Index for uplink
+- Average bandwidth allocation (downlink and uplink)
 
-```
-o Where ratios = allocations / requests
-```
-- Average bandwidth allocation
-
-
-**Formula** (Lines 19-27):
-
+**Fairness Formula:**
+```matlab
 ratios = allocations ./ max(requests, 0.01);
-if sum(ratios.^2) > 0
-fairness(t) = (sum(ratios))^2 / (length(users) * sum(ratios.^2));
-else
-fairness(t) = 0.5;
-end
+fairness = (sum(ratios))^2 / (N * sum(ratios^2));
+```
 
 ### initialize_results.m
+**Location:** `core/utils/initialize_results.m`  
+**Purpose:** Pre-allocates result arrays for simulation
 
-**Purpose** : Pre-allocates result arrays for simulation
+---
 
 ## 6. MAIN SIMULATIONS
 
-### hybrid_simulation.m
+### baseline_simulation.m
+**Location:** `simulation/baseline_simulation.m`  
+**Purpose:** Baseline simulation (WWA + Fuzzy Handover, no RL)
 
-**Purpose** : Baseline simulation (WWA + Fuzzy Handover, no RL)
-**Workflow** :
+**Workflow:**
+1. Generate/update users at each time step
+2. Perform fuzzy logic handover
+3. Split users by network
+4. Allocate resources (downlink and uplink separately)
+5. Merge allocations
+6. Record metrics
+7. Repeat for 50 steps
 
-1. Generate users at each time step
-2. Update user movement
-3. Perform handover
-4. Split users by network
-5. Allocate resources (WWA)
-6. Merge allocations
-7. Record metrics
-8. Repeat 50 steps
+**Supports:**
+- Single simulation run
+- Multiple runs for statistical analysis
 
-**Outputs** : Plots 9-panel visualization + performance metrics
+### rl_enhanced_simulation.m
+**Location:** `simulation/rl_enhanced_simulation.m`  
+**Purpose:** RL-enhanced simulation using trained agent
 
-### wwa_simulation.m
+**Key Difference:** Uses RL agent to select actions dynamically for network parameters
 
-**Purpose** : Dedicated WWA algorithm testing with detailed fairness analysis
-**Features** : 9 separate fairness plots showing distribution, trends, stability
+---
 
-### run_single_simulation.m
+## 7. REINFORCEMENT LEARNING LAYER
 
-**Purpose** : Runs one complete simulation and returns mean fairness, throughput,
-handovers
+### extract_state.m - RL STATE SPACE
+**Location:** `algorithms/rl/extract_state.m`  
+**Purpose:** Converts network conditions into 12-dimensional state vector
 
-
-### compare_baselines.m
-
-**Purpose** : Compares WWA vs Proportional allocation over 10 runs
-**Outputs** : Bar chart comparison
-
-## 7. REINFORCEMENT LEARNING (RL)
-
-## LAYER
-
-### extract_state.m RL STATE SPACE DEFINITION
-
-**Purpose** : Converts network conditions into 12-dimensional state vector for RL
-**State Components** :
-
-state(1): WiFi user ratio
-state(2): VLC user ratio
-state(3): Total user density (normalized to 30)
-state(4): WiFi demand ratio (normalized)
-state(5): VLC demand ratio (normalized)
-state(6): Current fairness index
-state(7): Mean user distance to nearest AP
-state(8): Handover frequency ratio
-state(9): Average allocation ratio
+**State Components:**
+```
+state(1):  WiFi user ratio
+state(2):  VLC user ratio
+state(3):  Total user density (normalized to 30)
+state(4):  WiFi demand ratio
+state(5):  VLC demand ratio
+state(6):  Current fairness index
+state(7):  Mean user distance to nearest AP
+state(8):  Handover frequency ratio
+state(9):  Average allocation ratio
 state(10): User density with coverage ratio
-state(11): Fairness improvement trend (past vs recent)
+state(11): Fairness improvement trend
 state(12): Handover frequency trend
+```
 
-**Code Location** : Lines 15-70 of extract_state.m
+All values normalized to [0, 1] or [0, 1.5] with NaN/Inf handling.
 
-All values normalized to [0, 1] or [0, 1.5] range with NaN/Inf handling.
+### calculate_reward.m - RL REWARD FUNCTION
+**Location:** `algorithms/rl/calculate_reward.m`  
+**Purpose:** Computes reward signal for RL agent
 
-### calculate_reward.m RL REWARD FUNCTION
+**Reward Components:**
+```
+Combined Fairness Reward: (DL_fairness + UL_fairness)/2 * 45
+Handover Penalty: handovers * 35
+Combined Throughput Reward: (DL_tput + UL_tput)/2 * 6
+High Fairness Bonus: 8 or 15 (if >0.92 or >0.95)
+High Throughput Bonus: 10, 25, or 40 (if >10, >12, or >15 Mbps)
+Low Handover Bonus: 30 or 60 (if <20% or <10% handover rate)
+```
 
-**Purpose** : Computes reward signal for RL agent
-**Reward Components** :
+**Range:** Clamped to [-200, 400]
 
-reward = fairness_reward (45×)
+### define_action_space_reduced.m - RL ACTION SPACE
+**Location:** `algorithms/rl/define_action_space_reduced.m`  
+**Purpose:** Defines 24 discrete actions (3×2×2×1×2)
 
-- handover_penalty (35×)
-+ throughput_reward (6×)
-+ high_fairness_bonus (8 or 15)
-+ high_throughput_bonus (10, 25, or 40)
-+ low_handover_bonus (30 or 60)
+**Action Parameters:**
+- Handover Thresholds: [0.20, 0.25, 0.30] (3 values)
+- WiFi Ratios: [0.60, 0.70] (2 values)
+- Weight Max: [6, 8] (2 values)
+- Allocation Method: ['wwa'] (1 value)
+- QoS Presets: 2 different weight combinations
 
-Range: Clamped to [-200, 400]
-
-
-**Logic** :
-
-- Maximize fairness (primary objective)
-- Minimize handovers
-- Balance WiFi/VLC utilization
-- Maintain fairness stability
-- Reward improvement over time
-
-**Code** : Lines 1-70 of calculate_reward.m
-
-### define_action_space.m RL ACTION SPACE
-
-**Purpose** : Defines 135 discrete actions (5×3×3×3)
-**Action Parameters** :
-
-- Handover threshold: [0.05, 0.10, 0.15, 0.20, 0.25] (5 values)
-- WiFi ratio: [0.5, 0.6, 0.7] (3 values)
-- Weight range max: [3, 5, 7] (3 values)
-- QoS presets: 3 different weight combinations
-
-**Total Actions** : 5 × 3 × 3 × 3 = **135 actions**
-
-### define_action_space_reduced.m
-
-**Purpose** : Simplified action space with 24 actions
-**Reduced to** : 3×2×2×1×2 = **24 actions** (faster training)
-**Parameters**:
-- Handover Thresholds: [0.20, 0.25, 0.30]
-- WiFi Ratios: [0.60, 0.70]
-- Weight Max: [6, 8]
-- QoS Presets: 2 options
+**Total Actions:** 3 × 2 × 2 × 1 × 2 = **24 actions**
 
 ### apply_rl_action.m
+**Location:** `algorithms/rl/apply_rl_action.m`  
+**Purpose:** Applies selected RL action to network parameters
 
-**Purpose** : Applies selected RL action to network parameters
-**Modifies** :
-
+**Modifies:**
 - handover_threshold
 - wifi_capacity_ratio / vlc_capacity_ratio
 - weight_range
 - qos_weights
 
-## 8. RL AGENTS
+---
 
-### QLearningAgent.m Q-LEARNING
+## 8. RL AGENT
 
-### IMPLEMENTATION
+### QLearningAgent.m - Q-LEARNING IMPLEMENTATION
+**Location:** `algorithms/rl/QLearningAgent.m`  
+**Purpose:** Q-Learning agent with state discretization
 
+**Key Components:**
+- **Q-table:** `bins_per_dim^state_dim` table
+- **State Discretization:** 4 key features (fairness, throughput, handovers, wifi demand)
+- **Epsilon-greedy Policy:** For exploration-exploitation
 
-**Purpose** : Traditional Q-Learning agent with state discretization
-**Key Components** :
-
-- State discretization: Bins each state dimension into discrete levels
-- Q-table: bins_per_dim ^ state_dim table
-- Epsilon-greedy exploration
-- Temporal difference update
-
-**Algorithm** :
-
+**Q-Learning Update Formula:**
+```
 Q(s,a) ← Q(s,a) + α[r + γ·max_a'Q(s',a') - Q(s,a)]
+```
 
-Q(s,a) = Your current knowledge about taking action a in state s
-α = Learning rate (0.3) - how much to update each time
-r = Reward you just received
-γ = Discount factor (0.9) - how much you value future rewards vs immediate ones
-max_a'Q(s',a') = Best possible reward from the next state s'
-[r + γ·max_a'Q(s',a') - Q(s,a)] = TD Error (difference between what you expected vs
-reality)
+**Key Methods:**
+- `select_action()`: Epsilon-greedy action selection
+- `update()`: TD update
+- `discretize_state()`: Maps continuous state to table index
+- `decay_epsilon()`: Reduces exploration over time
+- `save/load()`: Checkpoint management
+- `get_coverage()`: Q-table exploration coverage
 
-**Key Methods** :
-
-- select_action(): Epsilon-greedy policy
-- update(): TD update
-- discretize_state(): Maps continuous state to table index
-- decay_epsilon(): Reduces exploration over time
-
-**Hyperparameters** (Lines 7-12):
-
+**Hyperparameters:**
+```matlab
 learning_rate: 0.012
 discount_factor (gamma): 0.97
 epsilon_start: 1.0
 epsilon_decay: 0.9995
 epsilon_min: 0.05
 bins_per_dim: 4
+state_dim: 4 (key features)
+```
 
-
-### ThroughputQLearning.m SIMPLIFIED Q-
-
-### LEARNING (MAIN AGENT)
-
-**Purpose** : Lightweight Q-Learning focused on throughput with fairness penalty
-**State Discretization** : Custom (not uniform binning)
-
-- State 1: Throughput (5 bins)
-- State 2: Fairness (5 bins, with thresholds at [0.85, 0.90, 0.93, 0.96])
-- State 3: Handover frequency (5 bins)
-
-**Total States** : 5³ = **125 states** (vs 100⁴ in QLearningAgent)
-
-**Key Difference** : Adaptive binning for fairness emphasizes critical thresholds
+---
 
 ## 9. TRAINING PIPELINE
 
 ### train_rl_agent.m
+**Location:** `algorithms/rl/train_rl_agent.m`  
+**Purpose:** Full training loop for RL agent with checkpoint selection
 
-**Purpose** : Full training loop for RL agent
-**Process** (per episode):
-
+**Training Process (per episode):**
 1. Create network and results array
 2. For each time step:
-    o Generate/update users
-
-```
-o Extract state
-o Select action (ε-greedy)
-```
-```
-o Apply RL action
-o Perform handover & allocation
-```
-```
-o Record results
-o Calculate reward
-```
-```
-o Update Q-table (if not first step)
-```
+   - Generate/update users
+   - Extract state
+   - Select action (ε-greedy)
+   - Apply RL action
+   - Perform handover & allocation (both DL/UL)
+   - Record results
+   - Calculate reward
+   - Update Q-table
 3. Decay epsilon
-4. Log episode statistics
+4. Save checkpoint every 5% of episodes
 
-**Training Outputs** :
+**Checkpoint Selection Process:**
+1. Create 20 checkpoints throughout training
+2. Calculate composite scores: `fairness*100 + throughput*2 - handovers*1.5`
+3. Select top 20 candidates
+4. Re-evaluate each candidate with 10 simulation runs
+5. Recalculate scores based on evaluation
+6. Display top candidates in table format
+7. User selects best checkpoint interactively
+8. Load selected checkpoint as final agent
+9. Option to save as custom best model
 
-- trained_agent.mat: Trained Q-table
-- training_stats.mat: Episode metrics
-- Plot visualization
+**Training Outputs:**
+- `output/data/trained_agent.mat`: Final trained Q-table
+- `output/data/training_stats.mat`: Episode metrics
+- `output/checkpoints/`: 20 checkpoint files
+- `output/custom_checkpoint/best_model.mat`: Optional custom save
 
-
-**Config** : Lines 1- 30
-
-agent = QLearningAgent(struct(
-'learning_rate', 0.2,
-'gamma', 0.95,
-'epsilon_start', 1.0,
-'epsilon_decay', 0.998,
-'epsilon_min', 0.05,
-'num_actions', 135,
-'state_dim', 4,
-'bins_per_dim', 5));
-
-### main_rl_pipeline.m
-
-**Purpose** : High-level orchestration of entire pipeline
-**Modes** :
-
-1. train (2000 episodes)
-2. test (100 episodes)
-3. wwa (WWA simulation)
-4. baseline (Hybrid baseline)
-5. evaluate (RL-enhanced)
-6. compare (vs baseline)
-7. full (all steps)
-8. report (generate report)
-
-**Interactive Menu** : Lines 35- 70
+---
 
 ## 10. EVALUATION & ANALYSIS
 
-### hybrid_simulation_rl.m
-
-**Purpose** : Runs simulation using trained RL agent
-**Workflow** : Same as hybrid_simulation.m but uses RL for action selection
-
-### compare_rl_baseline.m
-
-**Purpose** : Compares trained RL agent vs baseline (10 runs each)
-**Metrics Compared** :
-
-- Fairness (mean ± std)
-- Handovers (mean ± std)
-- Utilization (mean ± std)
-
-
-- % Improvement calculation
-
-### run_complete_analysis.m
-
-**Purpose** : 4-phase complete pipeline
-**Phases** :
-
-1. Baseline comparison (WWA vs Proportional)
-2. RL training with WWA
-3. RL training with Proportional
-4. Final comparison & report
-
 ### evaluate_system_performance.m
+**Location:** `evaluation/evaluate_system_performance.m`  
+**Purpose:** Comprehensive performance metric calculation
 
-**Purpose** : Comprehensive performance metric calculation
-**Computes** (7 categories):
+**Metrics Computed:**
+- Mean/Std Fairness (DL and UL)
+- Mean Throughput (DL and UL)
+- Total/Average Handovers
+- Average Users
 
-1. Throughput (mean, max, utilization %)
-2. Latency (network, handover, queue delays)
-3. Reliability (PDR, stability, outage)
-4. Fairness (Jain's index, trend, stability)
-5. Energy efficiency (W/Mbps, W/user)
-6. QoE (MOS scores for video, web, VoIP, gaming)
-7. Summary ratings (0-1 scale for each)
+### compare_all_methods.m
+**Location:** `evaluation/compare_all_methods.m`  
+**Purpose:** Compares different allocation methods and RL approaches
 
-**Output** : 7-metric performance struct
+**Comparison Metrics:**
+- Fairness (mean ± std)
+- Throughput (mean ± std)
+- Handovers (mean ± std)
+- % Improvement calculations
 
-## 11. VISUALIZATION & REPORTING
+### generate_comparison_report.m
+**Location:** `evaluation/generate_comparison_report.m`  
+**Purpose:** Generates detailed text report of comparisons
 
-### plot_hybrid_results.m
+---
 
-**Purpose** : 9-panel visualization of simulation
-**Panels** :
+## 11. EXPERIMENTS
 
+### experiment_wwa_only.m
+**Location:** `experiments/experiment_wwa_only.m`  
+**Purpose:** Dedicated WWA algorithm testing
+
+### experiment_rl_training.m
+**Location:** `experiments/experiment_rl_training.m`  
+**Purpose:** RL training with configurable episodes
+
+### experiment_full_comparison.m
+**Location:** `experiments/experiment_full_comparison.m`  
+**Purpose:** Compares WWA baseline vs RL-enhanced over multiple runs
+
+**Outputs:** Comparison plots and statistical analysis
+
+---
+
+## 12. VISUALIZATION
+
+### plot_simulation_results.m
+**Location:** `visualization/plot_simulation_results.m`  
+**Purpose:** 9-panel visualization of simulation results
+
+**Panels:**
 1. Fairness over time
 2. User distribution (WiFi vs VLC)
-3. Handover events (stem plot)
+3. Handover events
 4. Fairness histogram
 5. Average bandwidth allocation
-6. Fairness vs handovers (dual-axis)
+6. Fairness vs handovers
 7. Smoothed fairness
-
-
-8. Network load distribution (area chart)
+8. Network load distribution
 9. Cumulative handovers
 
 ### plot_training_results.m
+**Location:** `visualization/plot_training_results.m`  
+**Purpose:** 6-panel RL training visualization
 
-**Purpose** : 6-panel RL training visualization
-**Panels** :
-
+**Panels:**
 1. Episode rewards
 2. Average fairness per episode
 3. Total handovers per episode
 4. Epsilon decay
-5. Smoothed rewards (50-episode moving average)
+5. Smoothed rewards
 6. Smoothed fairness
 
-### plot_baseline_comparison.m
+### create_comparison_plots.m
+**Location:** `visualization/create_comparison_plots.m`  
+**Purpose:** Comparison plots between methods
 
-**Purpose** : 3-panel comparison (WWA vs Proportional)
+---
 
-### plot_performance_evaluation.m
+## 13. MAIN EXECUTION
 
-**Purpose** : Comprehensive performance dashboard (9 panels + radar chart + gauge)
+### main_pipeline.m
+**Location:** `main/main_pipeline.m`  
+**Purpose:** Main execution orchestrator with interactive menu
 
-### generate_performance_report.m
+**Operation Modes:**
+1. Setup & Verify Environment
+2. Run WWA Baseline Experiment
+3. Train RL Agent
+4. Run RL-Enhanced Simulation
+5. Compare All Methods
+6. Full Pipeline (All steps)
+7. Exit
 
-**Purpose** : Generates detailed text report (8 sections)
-**Sections** :
+**Full Pipeline Workflow:**
+1. WWA Baseline (10 runs)
+2. RL Training (configurable episodes)
+3. RL Evaluation (10 runs)
+4. Full Comparison & Report
 
-1. Throughput Performance
-2. Latency Analysis
-3. Reliability Metrics
-4. Fairness Analysis
-5. Energy Efficiency
-6. QoE (by application)
-7. Summary Ratings
-8. Performance Interpretation
+### setup_environment.m
+**Location:** `main/setup_environment.m`  
+**Purpose:** Validates all required files and tests basic functions
 
-### generate_comparison_report.m
+---
 
-**Purpose** : RL training summary report
+## KEY ALGORITHMS SUMMARY
 
+### Fuzzy Logic-Based Dynamic Handover
+- **File:** `core/network/perform_handover.m`
+- **Algorithm:** Rule-based handover with fuzzy scoring
+- **Formula:** `score = 0.4×bw_norm + 0.3×delay_norm + 0.2×jitter_norm + 0.1×ber_norm`
+- **Decision:** `if best_score > current_score + threshold: handover`
 
-## 12. UTILITIES & HELPERS
+### WWA (Weight-Weighted Allocation)
+- **File:** `algorithms/allocation/wwa_algorithm.m`
+- **Algorithm:** Fair resource allocation with dynamic range reduction
+- **Key Steps:** Union creation → Group allocation → User-level allocation → Request capping
+- **Union Formula:**
+  - Odd (n=5): [r1+r5], [r2+r4], [2×r3]
+  - Even (n=4): [r1+r4], [r2+r3]
 
-## setup_rl_environment.m
+### RL-Based Adaptive Resource Management
+- **Files:** Multiple in `algorithms/rl/`
+- **Algorithm:** Q-Learning with continuous state discretization
+- **State Space:** 12-dimensional
+- **Action Space:** 24 discrete actions
+- **Reward:** Fairness + Utilization - Handovers - Instability
 
-**Purpose** : Pre-training verification of all required files and functions
+---
 
-## setup_rl_environment.m
+## FAIRNESS METRIC
 
-**Purpose** : Validates all 15+ required files exist and tests basic functions
+**Location:** `core/utils/record_results.m`  
+**Formula:** Jain's Fairness Index
 
-# PROPOSED ALGORITHMS
-
-# LOCATION SUMMARY
-
-## ALGORITHM #1: Fuzzy Logic-Based
-
-## Dynamic Handover
-
-**File** : perform_handover.m
-**Lines** : 87-96 (fuzzy_score function)
-**Algorithm Type** : Rule-based handover with fuzzy scoring
-
-**Key Formula** :
-
-score = 0.4×bw_norm + 0.3×delay_norm + 0.2×jitter_norm + 0.1×ber_norm
-
-**Decision Rule** :
-
-if best_score > current_score + threshold:
-handover_to_best_network()
-
-## ALGORITHM #2: WWA (Weight-
-
-## Weighted Allocation)
-
-**File** : wwa_algorithm.m
-**Lines** : 1- 50
-**Algorithm Type** : Fair resource allocation with dynamic range reduction
-
-**Key Steps** :
-
-
-1. Create unions: Pair user requests from ends toward middle
-2. Group allocation: Bandwidth distributed to unions proportionally
-3. User-level allocation: Within groups, by user weight
-4. Recycle surplus: Collect over-allocations and redistribute
-5. Iterate until convergence
-
-**Union Formula** :
-
-Odd (n=5): [r1+r5], [r2+r4], [2×r3]
-Even (n=4): [r1+r4], [r2+r3]
-
-## ALGORITHM #3: RL-Based Adaptive
-
-## Resource Management
-
-**Files** :
-
-- ThroughputQLearning.m (Agent)
-- extract_state.m (State)
-- calculate_reward.m (Reward)
-- define_action_space_reduced.m (Actions)
-- train_rl_agent.m (Training)
-
-**Algorithm Type** : Q-Learning with continuous state discretization
-**From Document** : Not explicitly detailed (extension of paper)
-
-**State Space** : 12-dimensional
-**Action Space** : 36-135 discrete actions
-**Reward Components** : Fairness + Utilization - Handovers - Instability
-
-
-# FAIRNESS METRIC
-
-**Location** : record_results.m (Lines 19-27)
-**Formula** (Jain's Fairness Index):
-
+```
 F = (Σ ratios)² / (N × Σ ratios²)
-
 where ratios_i = allocated_i / requested_i
+```
 
-**Ref** : https://reimbar.org/posts/jain-fairness/
-
-**Range** : [0, 1]
-
+**Properties:**
+- Range: [0, 1]
 - F = 1: Perfect fairness
 - F → 0: High unfairness
+- Applied separately for downlink and uplink
 
-# SYSTEM WORKFLOW
+---
 
-#### START
+## UPLINK/DOWNLINK SUPPORT
 
-#### ↓
+**Key Changes in Version 2.0:**
+- Separate uplink capacity (50% of downlink)
+- Uplink requests (20-50% of downlink)
+- Dual allocation in all simulations
+- Separate fairness tracking for uplink
+- Combined metrics in reward function
 
-[1] Generate Users + Network
-↓
-[2] For each time step:
-├─ Update user positions
+**Implementation:**
+```matlab
+wifi_alloc = allocate_resources(wifi_users, wifi_capacity, method, 'downlink');
+wifi_alloc_ul = allocate_resources(wifi_users, wifi_capacity_ul, method, 'uplink');
+users = merge_allocations(users, ..., wifi_alloc, vlc_alloc, wifi_alloc_ul, vlc_alloc_ul);
+```
 
-├─ PERFORM HANDOVER (Fuzzy Logic) ALGO #
-├─ Split users (WiFi/VLC)
+---
 
-├─ ALLOCATE RESOURCES (WWA) ALGO #
+## CONFIGURATION PARAMETERS
 
-├─ Extract state + Select RL action ALGO #
-├─ Calculate reward
-├─ Update Q-table
-├─ Record fairness + metrics
-└─ Loop
-↓
-[3] Calculate Jain's fairness index
-↓
-[4] Visualize + Report
-↓
-END
+**All configurable in `config/load_config.m`:**
 
+**Network:**
+- Total Capacity: 1000 Mbps
+- WiFi Capacity Ratio: 70% (DL), 50% (UL)
+- VLC Capacity Ratio: 30% (DL), 50% (UL)
+- Room Size: 20m × 20m
+- Coverage Radii: WiFi 12m, VLC 4m
 
-# CONFIGURATION
+**Simulation:**
+- Simulation Time: 50 steps
+- Base Users: 20 ± 5
+- Service Probabilities: [0.3, 0.3, 0.2, 0.1, 0.1]
 
-# PARAMETERS
+**Handover:**
+- Handover Threshold: 0.15
+- QoS Weights: [0.4, 0.3, 0.2, 0.1]
 
-All configurable in load_config.m:
+**RL Training:**
+- Learning Rate (α): 0.012
+- Discount Factor (γ): 0.97
+- Epsilon Start: 1.0
+- Epsilon Decay: 0.9995
+- Epsilon Min: 0.05
+- State Dimensions: 4 key features
+- Bins per Dimension: 4
 
-- Total capacity: 1000 Mbps
-- Simulation time: 50 steps
-- Base users: 20 ± 5
-- Room size: 20m × 20m
-- WiFi capacity ratio: 70%
-- VLC capacity ratio: 30%
-- Handover threshold: 0.15
-- QoS weights: [0.4, 0.3, 0.2, 0.1]
+---
 
-# TRAINING PARAMETERS
+## PROJECT STRUCTURE
 
-All configurable in train_rl_agent.m:
+```
+vlc-privet/
+├── algorithms/
+│   ├── allocation/
+│   │   ├── allocate_resources.m
+│   │   └── wwa_algorithm.m
+│   └── rl/
+│       ├── apply_rl_action.m
+│       ├── calculate_reward.m
+│       ├── define_action_space.m
+│       ├── define_action_space_reduced.m
+│       ├── extract_state.m
+│       ├── QLearningAgent.m
+│       └── train_rl_agent.m
+├── config/
+│   └── load_config.m
+├── core/
+│   ├── network/
+│   │   ├── create_network.m
+│   │   └── perform_handover.m
+│   ├── users/
+│   │   ├── create_hybrid_users.m
+│   │   └── update_user_movement.m
+│   └── utils/
+│       ├── initialize_results.m
+│       ├── merge_allocations.m
+│       ├── record_results.m
+│       └── split_users_by_network.m
+├── evaluation/
+│   ├── compare_all_methods.m
+│   ├── evaluate_system_performance.m
+│   └── generate_comparison_report.m
+├── experiments/
+│   ├── experiment_full_comparison.m
+│   ├── experiment_rl_training.m
+│   └── experiment_wwa_only.m
+├── main/
+│   ├── main_pipeline.m
+│   └── setup_environment.m
+├── simulation/
+│   ├── baseline_simulation.m
+│   └── rl_enhanced_simulation.m
+├── visualization/
+│   ├── create_comparison_plots.m
+│   ├── plot_simulation_results.m
+│   └── plot_training_results.m
+└── output/
+    ├── checkpoints/
+    ├── custom_checkpoint/
+    ├── data/
+    ├── plots/
+    └── reports/
+```
 
-- Learning rate (α): 0.012
-- Discount factor (γ): 0.97
-- Epsilon start: 1.0
-- Epsilon decay: 0.9995
-- Epsilon min: 0.05
-- Number of actions: 24 (Reduced)
-- State dimensions: 4 (key features)
-- Bins per dimension: 4
+---
+
+## USAGE EXAMPLES
+
+### Run Main Pipeline
+```matlab
+main_pipeline()
+```
+
+### Run Baseline Simulation
+```matlab
+results = baseline_simulation('wwa', 10);
+```
+
+### Train RL Agent
+```matlab
+config = struct('num_episodes', 1000, 'learning_rate', 0.012, ...
+                'gamma', 0.97, 'epsilon_start', 1.0, ...
+                'epsilon_decay', 0.9995, 'epsilon_min', 0.05);
+[agent, stats] = train_rl_agent(config);
+```
+
+### Run RL-Enhanced Simulation
+```matlab
+load('output/data/trained_agent.mat', 'agent');
+results = rl_enhanced_simulation(agent, 10);
+```
+
+---
+
+**END OF DOCUMENT**
