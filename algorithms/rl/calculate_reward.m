@@ -8,7 +8,8 @@ function reward = calculate_reward(results, t)
     avg_fairness = (results.fairness(t) + results.fairness_ul(t)) / 2;
     fairness_reward = avg_fairness * 45;
     
-    handover_penalty = results.handovers(t) * 35.0;
+    % Increased penalty as per user request
+    handover_penalty = results.handovers(t) * 50.0;
     
     throughput_reward = 0;
     if results.total_users(t) > 0 && t > 1

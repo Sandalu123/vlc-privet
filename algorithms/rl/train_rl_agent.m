@@ -200,7 +200,8 @@ function [agent, training_stats] = train_rl_agent(config)
         temp_agent.Q_table = cp_data.Q_table;
         temp_agent.epsilon = cp_data.epsilon;
         
-        eval_results = rl_enhanced_simulation(temp_agent, 10);
+        % Increased evaluation runs for stability
+        eval_results = rl_enhanced_simulation(temp_agent, 50);
         
         fairness_vals = [];
         throughput_vals = [];

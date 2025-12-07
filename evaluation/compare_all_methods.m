@@ -1,6 +1,6 @@
 function compare_all_methods(num_runs)
     if nargin < 1
-        num_runs = 10;
+        num_runs = 50; % Increased from 10 for stability
     end
     
     fprintf('\n╔══════════════════════════════════════════════════════════════╗\n');
