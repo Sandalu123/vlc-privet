@@ -17,6 +17,9 @@ end
 
 function results = run_single_simulation(allocation_method)
     params = load_config();
+    
+    params.handover_threshold = 0.05; 
+    
     network = create_network(params);
     results = initialize_results(params);
     
@@ -66,6 +69,9 @@ function results = run_multiple_simulations(allocation_method, num_runs)
         fprintf('  Run %d/%d... ', run, num_runs);
         
         params = load_config();
+
+        params.handover_threshold = 0.05;
+        
         network = create_network(params);
         sim_results = initialize_results(params);
         
