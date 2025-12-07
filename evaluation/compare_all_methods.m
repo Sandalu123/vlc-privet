@@ -83,5 +83,10 @@ function results = run_rl_experiments(agent, num_runs)
         results.fairness(run) = mean((res.fairness + res.fairness_ul) / 2);
         results.throughput(run) = mean((res.avg_allocation + res.avg_allocation_ul) / 2);
         results.handovers(run) = sum(res.handovers);
+        
+        % Plot detailed results for the last run
+        if run == num_runs
+            plot_simulation_results(res, 'RL-Enhanced Simulation (Last Run)');
+        end
     end
 end

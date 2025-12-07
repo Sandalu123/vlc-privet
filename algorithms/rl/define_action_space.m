@@ -1,4 +1,4 @@
-function actions = define_action_space_reduced()
+function actions = define_action_space()
     handover_thresholds = [0.10, 0.15, 0.20];
     wifi_ratios = [0.5, 0.6, 0.7];
     weight_max_values = [5, 7];

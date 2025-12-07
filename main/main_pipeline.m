@@ -94,7 +94,7 @@ end
 function run_full_pipeline()
     fprintf('\nThis will run all experiments:\n');
     fprintf('  1. WWA Baseline (10 runs)\n');
-    fprintf('  2. RL Training (1000 episodes)\n');
+    fprintf('  2. RL Training\n');
     fprintf('  3. RL Evaluation (10 runs)\n');
     fprintf('  4. Full Comparison & Report\n\n');
     fprintf('Estimated time: 2-3 hours\n\n');
