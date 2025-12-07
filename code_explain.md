@@ -338,14 +338,16 @@ state_dim: 4 (key features)
 
 **Checkpoint Selection Process:**
 1. Create 20 checkpoints throughout training
-2. Calculate composite scores: `fairness*100 + throughput*2 - handovers*1.5`
-3. Select top 20 candidates
-4. Re-evaluate each candidate with 10 simulation runs
-5. Recalculate scores based on evaluation
-6. Display top candidates in table format
-7. User selects best checkpoint interactively
-8. Load selected checkpoint as final agent
-9. Option to save as custom best model
+2. Calculate statistics (mean, std) for Fairness, Throughput, and Handovers from the exploitation phase (last 2000-3000 episodes)
+3. Calculate Z-scores for each checkpoint: `Score = Z_Fairness + Z_Throughput - Z_Handovers`
+   - Where `Z = (Value - Mean) / Std`
+4. Select top 20 candidates based on Z-score
+5. Re-evaluate each candidate with 10 simulation runs
+6. Recalculate scores using the same Z-score normalization parameters
+7. Display top candidates in table format
+8. User selects best checkpoint interactively
+9. Load selected checkpoint as final agent
+10. Option to save as custom best model
 
 **Training Outputs:**
 - `output/data/trained_agent.mat`: Final trained Q-table
