@@ -32,7 +32,7 @@ function results = run_single_simulation(allocation_method, suppress_plots)
         if t == 1
             users = create_hybrid_users(params, network, t);
         else
-            users = update_user_movement(users, params, network);
+            users = update_user_movement(users, params, network, t);
         end
         
         [users, handover_count] = perform_handover(users, network, params);
@@ -87,7 +87,7 @@ function results = run_multiple_simulations(allocation_method, num_runs)
             if t == 1
                 users = create_hybrid_users(params, network, t);
             else
-                users = update_user_movement(users, params, network);
+                users = update_user_movement(users, params, network, t);
             end
             
             [users, handover_count] = perform_handover(users, network, params);

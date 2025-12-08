@@ -32,7 +32,7 @@ function results = rl_enhanced_simulation(agent, num_runs, suppress_plots)
             if t == 1
                 users = create_hybrid_users(base_params, network, t);
             else
-                users = update_user_movement(users, base_params, network);
+                users = update_user_movement(users, base_params, network, t);
             end
             
             state = extract_state(users, network, results, t);
