@@ -56,6 +56,12 @@ function results = run_single_simulation(allocation_method)
     fprintf('Mean Fairness: %.4f\n', mean(results.fairness));
     fprintf('Total Handovers: %d\n', sum(results.handovers));
     fprintf('Avg Handovers/Step: %.2f\n', mean(results.handovers));
+    
+    plot_simulation_results(results, sprintf('Baseline - %s', upper(allocation_method)));
+    
+    if isfield(results, 'service_metrics')
+        plot_service_qos(results, sprintf('Baseline Service QoS - %s', upper(allocation_method)));
+    end
 end
 
 function results = run_multiple_simulations(allocation_method, num_runs)

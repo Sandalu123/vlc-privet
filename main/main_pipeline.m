@@ -74,22 +74,23 @@ end
 function run_rl_enhanced()
     addpath('simulation');
     addpath('algorithms/rl');
-    addpath('visualization');
+    addpath('core/network');
+    addpath('core/users');
+    addpath('core/utils');
+    addpath('algorithms/allocation');
     
     if ~isfile('output/data/trained_agent.mat')
         fprintf('✗ No trained agent found!\n');
-        fprintf('  Please run training first (option 4)\n');
+        fprintf('  Please run training first (Option 3)\n');
         return;
     end
     
     load('output/data/trained_agent.mat', 'agent');
     results = rl_enhanced_simulation(agent);
     
-    plot_simulation_results(results, 'RL-Enhanced Simulation');
-    plot_service_qos(results, 'RL-Enhanced Service QoS');
-    
     fprintf('\n✓ RL-Enhanced simulation complete!\n');
-    fprintf('  Plot saved to: output/plots/\n');
+    fprintf('  Plots saved to: output/plots/\n');
+    fprintf('  Metrics saved to: output/data/rl_perf_metrics.mat\n');
 end
 
 function run_full_pipeline()

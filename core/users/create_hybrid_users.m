@@ -26,11 +26,14 @@ function users = create_hybrid_users(params, network, time_step)
         end
         
         users(i).service_type = selected_service.name;
-        users(i).weight = selected_service.priority;
+        users(i).service_priority = selected_service.priority;
         
         % Bandwidth request based on service range
         bw_range = selected_service.bandwidth_range;
         users(i).request = bw_range(1) + rand() * (bw_range(2) - bw_range(1));
+        
+        % Calculate user priority using sigmoid formula
+        users(i).weight = calculate_user_priority(users(i).request, users(i).position, network, params);
         
         % Uplink Request (20-50% of Downlink)
         users(i).request_ul = users(i).request * (0.2 + 0.3 * rand());
