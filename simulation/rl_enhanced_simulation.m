@@ -39,11 +39,9 @@ function results = rl_enhanced_simulation(agent, num_runs)
             [users, handover_count] = perform_handover(users, network, params);
             [wifi_users, vlc_users] = split_users_by_network(users);
             
-            % Downlink Allocation
             wifi_alloc = allocate_resources(wifi_users, params.wifi_capacity, params.allocation_method, 'downlink');
             vlc_alloc = allocate_resources(vlc_users, params.vlc_capacity, params.allocation_method, 'downlink');
             
-            % Uplink Allocation
             wifi_alloc_ul = allocate_resources(wifi_users, params.wifi_capacity_ul, params.allocation_method, 'uplink');
             vlc_alloc_ul = allocate_resources(vlc_users, params.vlc_capacity_ul, params.allocation_method, 'uplink');
             
@@ -65,15 +63,7 @@ function results = rl_enhanced_simulation(agent, num_runs)
         end
         
         addpath('../evaluation');
-        perf_metrics = evaluate_system_performance(results, users, base_params);
-        
-        script_dir = fileparts(mfilename('fullpath'));
-        base_dir = fileparts(script_dir);
-        output_dir = fullfile(base_dir, 'output', 'data');
-        if ~exist(output_dir, 'dir')
-            mkdir(output_dir);
-        end
-        save(fullfile(output_dir, 'rl_perf_metrics.mat'), 'perf_metrics');
+        evaluate_system_performance(results, base_params);
     else
         results = all_results;
     end
