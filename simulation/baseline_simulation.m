@@ -6,6 +6,9 @@ function results = baseline_simulation(allocation_method, num_runs)
         num_runs = 1;
     end
     
+    current_dir = fileparts(mfilename('fullpath'));
+    base_dir = fileparts(current_dir);
+    addpath(fullfile(base_dir, 'core', 'utils'));
     addpath(genpath('..'));
     
     if num_runs == 1

@@ -7,6 +7,10 @@ function experiment_wwa_only()
     base_dir = fileparts(script_dir);
     
     addpath(fullfile(base_dir, 'config'));
+    addpath(fullfile(base_dir, 'core', 'network'));
+    addpath(fullfile(base_dir, 'core', 'users'));
+    addpath(fullfile(base_dir, 'core', 'utils'));
+    addpath(fullfile(base_dir, 'algorithms', 'allocation'));
     addpath(fullfile(base_dir, 'simulation'));
     addpath(fullfile(base_dir, 'visualization'));
     addpath(fullfile(base_dir, 'evaluation'));

@@ -10,12 +10,14 @@ function results = rl_enhanced_simulation(agent, num_runs)
             fprintf('RL-Enhanced Run %d/%d...\n', run, num_runs);
         end
         
-        addpath('../config');
-        addpath('../core/network');
-        addpath('../core/users');
-        addpath('../core/utils');
-        addpath('../algorithms/allocation');
-        addpath('../algorithms/rl');
+        current_dir = fileparts(mfilename('fullpath'));
+        base_dir = fileparts(current_dir);
+        addpath(fullfile(base_dir, 'config'));
+        addpath(fullfile(base_dir, 'core', 'network'));
+        addpath(fullfile(base_dir, 'core', 'users'));
+        addpath(fullfile(base_dir, 'core', 'utils'));
+        addpath(fullfile(base_dir, 'algorithms', 'allocation'));
+        addpath(fullfile(base_dir, 'algorithms', 'rl'));
         
         base_params = load_config();
         network = create_network(base_params);
