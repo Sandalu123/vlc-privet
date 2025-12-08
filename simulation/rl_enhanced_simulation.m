@@ -54,6 +54,24 @@ function results = rl_enhanced_simulation(agent, num_runs)
     
     if num_runs == 1
         results = all_results{1};
+        
+        addpath('../visualization');
+        plot_simulation_results(results, 'RL-Enhanced Simulation');
+        
+        if isfield(results, 'service_metrics')
+            plot_service_qos(results, 'RL-Enhanced Service QoS');
+        end
+        
+        addpath('../evaluation');
+        perf_metrics = evaluate_system_performance(results, users, base_params);
+        
+        script_dir = fileparts(mfilename('fullpath'));
+        base_dir = fileparts(script_dir);
+        output_dir = fullfile(base_dir, 'output', 'data');
+        if ~exist(output_dir, 'dir')
+            mkdir(output_dir);
+        end
+        save(fullfile(output_dir, 'rl_perf_metrics.mat'), 'perf_metrics');
     else
         results = all_results;
     end

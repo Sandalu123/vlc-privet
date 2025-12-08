@@ -94,6 +94,7 @@ function [agent, training_stats] = train_rl_agent(config)
         
         agent.decay_epsilon();
         
+        episode_reward = max(-10000, min(20000, episode_reward));
         training_stats.episode_rewards(episode) = episode_reward;
         training_stats.episode_fairness(episode) = mean(results.fairness);
         training_stats.episode_throughput(episode) = mean(results.avg_allocation);

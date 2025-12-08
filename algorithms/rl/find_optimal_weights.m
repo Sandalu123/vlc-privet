@@ -38,8 +38,9 @@ function [weights, normalization] = find_optimal_weights(fairness, throughput, h
     features = [f, t, h_benefit];
     
     % 2. Grid search for weights on simplex (x + y + z = 1)
-    step = 0.02;
-    vals = 0:step:1;
+    % Constrained: minimum weight = 0.15 (ensures all metrics contribute)
+    step = 0.05;
+    vals = 0.15:step:0.70;
     
     results = [];  % store mean score and weights
     
@@ -47,7 +48,7 @@ function [weights, normalization] = find_optimal_weights(fairness, throughput, h
         for y = vals
             z = 1 - (x + y);
             
-            if z < 0
+            if z < 0.15 || z > 0.70
                 continue;
             end
             
