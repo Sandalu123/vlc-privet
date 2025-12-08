@@ -78,15 +78,14 @@ function results = run_rl_experiments(agent, num_runs)
     
     for run = 1:num_runs
         fprintf('  Run %d/%d... ', run, num_runs);
-        res = rl_enhanced_simulation(agent);
+        res = rl_enhanced_simulation(agent, 1, true);  % Suppress plots during multi-run
         fprintf('Done\n');
         results.fairness(run) = mean((res.fairness + res.fairness_ul) / 2);
         results.throughput(run) = mean((res.avg_allocation + res.avg_allocation_ul) / 2);
         results.handovers(run) = sum(res.handovers);
-        
-        % Plot detailed results for the last run
-        if run == num_runs
-            plot_simulation_results(res, 'RL-Enhanced Simulation (Last Run)');
-        end
     end
+    
+    % Generate single final plot after all runs
+    fprintf('\nGenerating final RL plots...\n');
+    rl_enhanced_simulation(agent, 1, false);  % Show plots for final run
 end

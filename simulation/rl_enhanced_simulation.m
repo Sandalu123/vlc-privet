@@ -1,6 +1,9 @@
-function results = rl_enhanced_simulation(agent, num_runs)
+function results = rl_enhanced_simulation(agent, num_runs, suppress_plots)
     if nargin < 2
         num_runs = 1;
+    end
+    if nargin < 3
+        suppress_plots = false;
     end
     
     all_results = cell(num_runs, 1);
@@ -55,15 +58,17 @@ function results = rl_enhanced_simulation(agent, num_runs)
     if num_runs == 1
         results = all_results{1};
         
-        addpath('../visualization');
-        plot_simulation_results(results, 'RL-Enhanced Simulation');
-        
-        if isfield(results, 'service_metrics')
-            plot_service_qos(results, 'RL-Enhanced Service QoS');
+        if ~suppress_plots
+            addpath('../visualization');
+            plot_simulation_results(results, 'RL-Enhanced Simulation');
+            
+            if isfield(results, 'service_metrics')
+                plot_service_qos(results, 'RL-Enhanced Service QoS');
+            end
+            
+            addpath('../evaluation');
+            evaluate_system_performance(results, base_params);
         end
-        
-        addpath('../evaluation');
-        evaluate_system_performance(results, base_params);
     else
         results = all_results;
     end
