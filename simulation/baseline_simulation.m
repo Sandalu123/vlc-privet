@@ -1,9 +1,12 @@
-function results = baseline_simulation(allocation_method, num_runs)
+function results = baseline_simulation(allocation_method, num_runs, suppress_plots)
     if nargin < 1
         allocation_method = 'wwa';
     end
     if nargin < 2
         num_runs = 1;
+    end
+    if nargin < 3
+        suppress_plots = false;
     end
     
     current_dir = fileparts(mfilename('fullpath'));
@@ -12,15 +15,14 @@ function results = baseline_simulation(allocation_method, num_runs)
     addpath(genpath('..'));
     
     if num_runs == 1
-        results = run_single_simulation(allocation_method);
+        results = run_single_simulation(allocation_method, suppress_plots);
     else
         results = run_multiple_simulations(allocation_method, num_runs);
     end
 end
 
-function results = run_single_simulation(allocation_method)
+function results = run_single_simulation(allocation_method, suppress_plots)
     params = load_config();
-    
     params.handover_threshold = 0.05; 
     
     network = create_network(params);
@@ -34,36 +36,34 @@ function results = run_single_simulation(allocation_method)
         end
         
         [users, handover_count] = perform_handover(users, network, params);
-        
         [wifi_users, vlc_users] = split_users_by_network(users);
         
-        % Downlink Allocation
         wifi_alloc = allocate_resources(wifi_users, params.wifi_capacity, allocation_method, 'downlink');
         vlc_alloc = allocate_resources(vlc_users, params.vlc_capacity, allocation_method, 'downlink');
         
-        % Uplink Allocation
         wifi_alloc_ul = allocate_resources(wifi_users, params.wifi_capacity_ul, allocation_method, 'uplink');
         vlc_alloc_ul = allocate_resources(vlc_users, params.vlc_capacity_ul, allocation_method, 'uplink');
         
         users = merge_allocations(users, wifi_users, vlc_users, wifi_alloc, vlc_alloc, wifi_alloc_ul, vlc_alloc_ul);
-        
         results = record_results(results, t, users, handover_count, params);
         
-        if mod(t, 10) == 0
+        if mod(t, 10) == 0 && ~suppress_plots
             fprintf('Time: %d, Users: %d (WiFi: %d, VLC: %d), Handovers: %d, Fairness: %.3f\n', ...
                 t, length(users), length(wifi_users), length(vlc_users), handover_count, results.fairness(t));
         end
     end
     
-    fprintf('\n=== Baseline Simulation Results (%s) ===\n', upper(allocation_method));
-    fprintf('Mean Fairness: %.4f\n', mean(results.fairness));
-    fprintf('Total Handovers: %d\n', sum(results.handovers));
-    fprintf('Avg Handovers/Step: %.2f\n', mean(results.handovers));
-    
-    plot_simulation_results(results, sprintf('Baseline - %s', upper(allocation_method)));
-    
-    if isfield(results, 'service_metrics')
-        plot_service_qos(results, sprintf('Baseline Service QoS - %s', upper(allocation_method)));
+    if ~suppress_plots
+        fprintf('\n=== Baseline Simulation Results (%s) ===\n', upper(allocation_method));
+        fprintf('Mean Fairness: %.4f\n', mean(results.fairness));
+        fprintf('Total Handovers: %d\n', sum(results.handovers));
+        fprintf('Avg Handovers/Step: %.2f\n', mean(results.handovers));
+        
+        plot_simulation_results(results, sprintf('Baseline - %s', upper(allocation_method)));
+        
+        if isfield(results, 'service_metrics')
+            plot_service_qos(results, sprintf('Baseline Service QoS - %s', upper(allocation_method)));
+        end
     end
 end
 
@@ -78,7 +78,6 @@ function results = run_multiple_simulations(allocation_method, num_runs)
         fprintf('  Run %d/%d... ', run, num_runs);
         
         params = load_config();
-
         params.handover_threshold = 0.05;
         
         network = create_network(params);
@@ -94,11 +93,9 @@ function results = run_multiple_simulations(allocation_method, num_runs)
             [users, handover_count] = perform_handover(users, network, params);
             [wifi_users, vlc_users] = split_users_by_network(users);
             
-            % Downlink Allocation
             wifi_alloc = allocate_resources(wifi_users, params.wifi_capacity, allocation_method, 'downlink');
             vlc_alloc = allocate_resources(vlc_users, params.vlc_capacity, allocation_method, 'downlink');
             
-            % Uplink Allocation
             wifi_alloc_ul = allocate_resources(wifi_users, params.wifi_capacity_ul, allocation_method, 'uplink');
             vlc_alloc_ul = allocate_resources(vlc_users, params.vlc_capacity_ul, allocation_method, 'uplink');
             

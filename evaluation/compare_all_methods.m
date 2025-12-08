@@ -63,11 +63,15 @@ function results = run_baseline_experiments(method, num_runs)
     results.handovers = zeros(1, num_runs);
     
     for run = 1:num_runs
-        res = baseline_simulation(method);
+        res = baseline_simulation(method, 1, true);  % Suppress plots
         results.fairness(run) = mean((res.fairness + res.fairness_ul) / 2);
         results.throughput(run) = mean((res.avg_allocation + res.avg_allocation_ul) / 2);
         results.handovers(run) = sum(res.handovers);
     end
+    
+    % Generate single final plot
+    fprintf('\nGenerating final WWA baseline plot...\n');
+    baseline_simulation(method, 1, false);  % Show plot
 end
 
 function results = run_rl_experiments(agent, num_runs)
