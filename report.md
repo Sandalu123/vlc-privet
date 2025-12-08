@@ -659,8 +659,6 @@ In the context of hybrid VLC-WiFi networks, RL offers the potential to optimize 
 
 The literature highlights the potential of hybrid VLC-WiFi networks to address the capacity crunch of future wireless systems. However, effective resource management remains a critical open problem. While traditional algorithms offer partial solutions, they often struggle to balance competing objectives in dynamic environments. RL presents a promising avenue for developing adaptive, intelligent resource allocation mechanisms that can cater to the diverse requirements of B5G/6G services.
 
-
-
 # Chapter 3: Methodology
 
 ## 3.1 System Model
@@ -680,9 +678,16 @@ Users move according to a random walk model with boundary reflections. Each user
 The WWA algorithm is designed to ensure fair resource distribution among users with heterogeneous demands.
 
 ### 3.2.1 Algorithm Steps
-1. **Union Formation**: Users are sorted by demand. High-demand users are paired with low-demand users to form "unions," reducing the variance in aggregate demand.
+1. **Union Formation**: Users are sorted by demand $r_1 \ge r_2 \ge \dots \ge r_n$. High-demand users are paired with low-demand users to form "unions," reducing the variance in aggregate demand.
+   - If $n$ is odd ($n=5$): $U_1=\{r_1, r_5\}, U_2=\{r_2, r_4\}, U_3=\{2 \cdot r_3\}$
+   - If $n$ is even ($n=4$): $U_1=\{r_1, r_4\}, U_2=\{r_2, r_3\}$
+
 2. **Group Allocation**: Bandwidth is allocated to each union proportional to its total demand.
+   \[ B_u = \frac{D_u}{\sum D_k} \times C_{total} \]
+   Where $D_u$ is the total demand of union $u$ and $C_{total}$ is the available capacity.
+
 3. **User Allocation**: Within each union, bandwidth is distributed based on individual user weights (priority).
+   \[ b_i = B_u \times \frac{w_i}{\sum_{j \in U} w_j} \]
 
 This two-stage approach prevents high-demand users from monopolizing resources while ensuring low-demand users receive adequate service.
 
@@ -691,32 +696,38 @@ This two-stage approach prevents high-demand users from monopolizing resources w
 A Q-Learning agent is employed to dynamically optimize network parameters.
 
 ### 3.3.1 State Space
-The state is a 4-dimensional vector discretized into bins:
+The state is a 4-dimensional vector discretized into 4 bins per dimension, resulting in $4^4 = 256$ possible states:
 1. **Fairness Index**: Current Jain's fairness index.
 2. **VLC User Ratio**: Proportion of users connected to VLC.
 3. **Handover Rate**: Frequency of recent handovers.
 4. **WiFi Demand Ratio**: Ratio of total demand served by WiFi.
 
 ### 3.3.2 Action Space
-The agent selects from 36 possible actions, modifying:
-- **Handover Threshold**: {0.10, 0.15, 0.20}
-- **Capacity Ratio**: {0.5, 0.6, 0.7} (WiFi share)
-- **Weight Range**: {Narrow, Wide}
-- **QoS Weights**: {Balanced, Throughput-focused}
+The agent selects from 24 possible actions, defined by combinations of:
+- **Handover Threshold**: {0.20, 0.25, 0.30}
+- **Capacity Ratio**: {0.60, 0.70} (WiFi share)
+- **Weight Range**: {6, 8}
+- **QoS Weights**: {[0.4, 0.3, 0.2, 0.1], [0.35, 0.35, 0.20, 0.10]}
 
 ### 3.3.3 Reward Function
 The reward function is a weighted sum of multiple objectives:
-\[ R = w_f \cdot F + w_t \cdot T - w_h \cdot H + B \]
+\[ R = 45 \cdot F + 6 \cdot T - 35 \cdot H + B \]
 Where:
-- \( F \) is Fairness
-- \( T \) is Throughput
-- \( H \) is Handover Rate
-- \( B \) includes bonuses for high performance or penalties for violations.
+- \( F \) is the average Fairness (DL + UL)
+- \( T \) is the average Throughput (DL + UL)
+- \( H \) is the Handover count
+- \( B \) includes bonuses for high performance (e.g., +15 if $F > 0.95$) or penalties for violations.
+
+### 3.3.4 Q-Learning Update
+The agent updates its Q-values using the standard Bellman equation:
+\[ Q(s,a) \leftarrow Q(s,a) + \alpha [r + \gamma \max_{a'} Q(s',a') - Q(s,a)] \]
+With learning rate $\alpha=0.012$, discount factor $\gamma=0.97$, and epsilon decay $\epsilon_{decay}=0.9995$.
 
 ## 3.4 Handover Mechanism
 
-Handover decisions are governed by a fuzzy logic-based scoring system. Each AP is scored based on available bandwidth, signal strength (distance), and user QoS requirements. A handover occurs if a candidate AP's score exceeds the current AP's score by a learned threshold (optimized by the RL agent).
-
+Handover decisions are governed by a fuzzy logic-based scoring system. Each AP is scored based on available bandwidth, signal strength (distance), and user QoS requirements.
+\[ Score = 0.4 \cdot \overline{BW} + 0.3 \cdot \overline{Delay} + 0.2 \cdot \overline{Jitter} + 0.1 \cdot \overline{BER} \]
+Where $\overline{X}$ represents the normalized metric value. A handover occurs if a candidate AP's score exceeds the current AP's score by the dynamic threshold determined by the RL agent.
 
 # Chapter 4: Results and Performance Analysis
 
@@ -782,6 +793,7 @@ While the current results are promising, several avenues for future research rem
 3.  X. Wu, M. D. Soltani, L. Zhou, M. Safari, and H. Haas, "Hybrid LiFi and WiFi Networks: A Survey," *IEEE Communications Surveys & Tutorials*, vol. 23, no. 2, pp. 1398-1420, 2021.
 4.  R. S. Sutton and A. G. Barto, *Reinforcement Learning: An Introduction*, 2nd ed., MIT Press, 2018.
 5.  R. Jain, D. M. Chiu, and W. R. Hawe, "A Quantitative Measure of Fairness and Discrimination for Resource Allocation in Shared Computer System," *DEC Research Report TR-301*, 1984.
+6.  A. Alenezi and K. A. Hamdi, "Reinforcement Learning Approach for Content-Aware Resource Allocation in Hybrid WiFi-VLC Networks," in *2021 IEEE 93rd Vehicular Technology Conference (VTC2021-Spring)*, Helsinki, Finland, 2021, pp. 1-5.
 
 ---
 
@@ -805,11 +817,11 @@ While the current results are promising, several avenues for future research rem
 5. Industrial: 1-10 Mbps, 1ms, priority=10
 
 **RL Configuration**:
-- Learning rate: 0.01
+- Learning rate: 0.012
 - Discount factor: 0.97
 - Epsilon: 0.9 → 0.05
 - State dim: 4
-- Actions: 36
+- Actions: 24
 
 ## Appendix B: Code Structure
 
