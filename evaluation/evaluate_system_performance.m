@@ -1,6 +1,4 @@
 function evaluate_system_performance(results, params)
-    addpath('../visualization');
-    
     fprintf('\n=== System Performance Evaluation ===\n');
     fprintf('Mean Fairness: %.4f\n', mean(results.fairness));
     fprintf('Std Fairness: %.4f\n', std(results.fairness));
@@ -15,5 +13,15 @@ function evaluate_system_performance(results, params)
     perf_metrics.handovers_total = sum(results.handovers);
     perf_metrics.users_avg = mean(results.total_users);
     
-    save('../output/data/performance_metrics.mat', 'perf_metrics');
+    % Find project root and create absolute path
+    current_file = mfilename('fullpath');
+    [current_dir, ~, ~] = fileparts(current_file);
+    project_root = fileparts(current_dir);
+    output_dir = fullfile(project_root, 'output', 'data');
+    
+    if ~exist(output_dir, 'dir')
+        mkdir(output_dir);
+    end
+    
+    save(fullfile(output_dir, 'performance_metrics.mat'), 'perf_metrics');
 end
