@@ -42,8 +42,8 @@ function [agent, training_stats] = train_rl_agent(config)
     end
     mkdir(checkpoint_dir);
     
-    % Create exactly 20 checkpoints
-    checkpoint_interval = floor(num_episodes / 20);
+    % Create checkpoints every 50 episodes
+    checkpoint_interval = 50;
     
     for episode = 1:num_episodes
         base_params = load_config();
