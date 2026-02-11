@@ -20,13 +20,14 @@ function [agent, training_stats] = train_rl_agent(config)
         'epsilon_min', config.epsilon_min, ...
         'num_actions', num_actions, ...
         'state_dim', 4, ...
-        'bins_per_dim', 4));
-    
-    % Use config from arguments
-    % config.num_episodes = 10000; % Removed override
-    config.epsilon_decay = 0.9995; % Slower decay for more exploration
+        'bins_per_dim', 6));
     
     num_episodes = config.num_episodes;
+    exploration_phase_episodes = floor(num_episodes * 0.3);
+    transition_phase_episodes = floor(num_episodes * 0.4);
+    config.epsilon_decay = 0.998;
+    target_exploitation_epsilon = 0.05;
+    epsilon_at_phase_end = 0;
     
     training_stats = struct();
     training_stats.episode_rewards = zeros(1, num_episodes);
@@ -81,7 +82,7 @@ function [agent, training_stats] = train_rl_agent(config)
             
             results = record_results(results, t, users, handover_count, params);
             
-            reward = calculate_reward(results, t);
+            reward = calculate_reward(results, t, params);
             episode_reward = episode_reward + reward;
             
             if ~isempty(prev_state)
@@ -92,7 +93,17 @@ function [agent, training_stats] = train_rl_agent(config)
             prev_action = action_idx;
         end
         
-        agent.decay_epsilon();
+        if episode <= exploration_phase_episodes
+            agent.decay_epsilon();
+            if episode == exploration_phase_episodes
+                epsilon_at_phase_end = agent.epsilon;
+            end
+        elseif episode <= transition_phase_episodes
+            progress = (episode - exploration_phase_episodes) / (transition_phase_episodes - exploration_phase_episodes);
+            agent.epsilon = epsilon_at_phase_end * (1 - progress) + target_exploitation_epsilon * progress;
+        else
+            agent.epsilon = target_exploitation_epsilon;
+        end
         
         episode_reward = max(-10000, min(20000, episode_reward));
         training_stats.episode_rewards(episode) = episode_reward;

@@ -4,6 +4,13 @@ function results = record_results(results, t, users, handover_count, params)
     results.wifi_users(t) = sum([users.current_network] == 1);
     results.vlc_users(t) = sum([users.current_network] > 1);
     
+    num_vlc_aps = size(params.vlc_ap_positions, 1);
+    vlc_ap_loads = zeros(1, num_vlc_aps);
+    for ap_idx = 1:num_vlc_aps
+        vlc_ap_loads(ap_idx) = sum([users.current_network] == (ap_idx + 1));
+    end
+    results.vlc_ap_loads{t} = vlc_ap_loads;
+    
     requests = [users.request];
     allocations = [users.allocated_bandwidth];
     if ~isempty(requests) && sum(requests) > 0 && sum(allocations) > 0

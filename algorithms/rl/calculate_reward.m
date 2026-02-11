@@ -1,19 +1,16 @@
-function reward = calculate_reward(results, t)
+function reward = calculate_reward(results, t, params)
     if t == 1 || results.fairness(t) == 0
         reward = 0;
         return;
     end
     
-    % Combined Fairness (Downlink + Uplink)
     avg_fairness = (results.fairness(t) + results.fairness_ul(t)) / 2;
     fairness_reward = avg_fairness * 45;
     
-    % Increased penalty as per user request
-    handover_penalty = results.handovers(t) * 50.0;
+    handover_penalty = results.handovers(t) * 25.0;
     
     throughput_reward = 0;
     if results.total_users(t) > 0 && t > 1
-        % Combined Throughput
         avg_throughput = (results.avg_allocation(t) + results.avg_allocation_ul(t)) / 2;
         throughput_reward = avg_throughput * 6.0;
     end
@@ -45,12 +42,19 @@ function reward = calculate_reward(results, t)
         low_handover_bonus = 30;
     end
     
+    load_imbalance_penalty = 0;
+    if nargin >= 3 && results.total_users(t) > 0
+        load_penalty_ratio = calculate_load_variance(results, t, params);
+        load_imbalance_penalty = load_penalty_ratio * 30;
+    end
+    
     reward = fairness_reward ...
              - handover_penalty ...
              + throughput_reward ...
              + high_fairness_bonus ...
              + high_throughput_bonus ...
-             + low_handover_bonus;
+             + low_handover_bonus ...
+             - load_imbalance_penalty;
     
     reward = max(-200, min(400, reward));
 end
