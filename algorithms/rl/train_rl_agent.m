@@ -195,7 +195,7 @@ function [agent, training_stats] = train_rl_agent(config)
     
     fprintf('Step 1: Calculated scores using Dynamic Weights\n');
     fprintf('Step 2: Selected top %d candidates\n', length(top_candidates));
-    fprintf('Step 3: Evaluating candidates (10 runs each) to recalculate scores...\n\n');
+    fprintf('Step 3: Evaluating candidates (30 runs each) to recalculate scores...\n\n');
     
     evaluated_candidates = [];
     for i = 1:length(top_candidates)
@@ -212,8 +212,7 @@ function [agent, training_stats] = train_rl_agent(config)
         temp_agent.Q_table = cp_data.Q_table;
         temp_agent.epsilon = cp_data.epsilon;
         
-        % Increased evaluation runs for stability
-        eval_results = rl_enhanced_simulation(temp_agent, 50);
+        eval_results = rl_enhanced_simulation(temp_agent, 30);
         
         fairness_vals = [];
         throughput_vals = [];
