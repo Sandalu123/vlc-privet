@@ -15,7 +15,7 @@ function experiment_wwa_only()
     addpath(fullfile(base_dir, 'visualization'));
     addpath(fullfile(base_dir, 'evaluation'));
     
-    num_runs = 10;
+    num_runs = 30;
     results = baseline_simulation('wwa', num_runs);
     
     fprintf('\n=== WWA Algorithm Results ===\n');

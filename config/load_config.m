@@ -21,6 +21,12 @@ function params = load_config()
     params.services.web_browsing.max_jitter = 50;
     params.services.web_browsing.max_ber = 1e-5;
     params.services.web_browsing.priority = 1;
+    params.services.web_browsing.base_latency_wifi = 5.0;
+    params.services.web_browsing.base_latency_vlc  = 2.0;
+    params.services.web_browsing.base_jitter_wifi  = 2.0;
+    params.services.web_browsing.base_jitter_vlc   = 1.0;
+    params.services.web_browsing.base_ber_wifi     = 1e-6;
+    params.services.web_browsing.base_ber_vlc      = 5e-7;
     
     % 2. Video Streaming 4K (eMBB - Enhanced Mobile Broadband)
     params.services.video_streaming.name = 'Video Streaming (4K)';
@@ -29,6 +35,12 @@ function params = load_config()
     params.services.video_streaming.max_jitter = 20;
     params.services.video_streaming.max_ber = 1e-6;
     params.services.video_streaming.priority = 5;
+    params.services.video_streaming.base_latency_wifi = 8.0;
+    params.services.video_streaming.base_latency_vlc  = 3.0;
+    params.services.video_streaming.base_jitter_wifi  = 3.0;
+    params.services.video_streaming.base_jitter_vlc   = 1.5;
+    params.services.video_streaming.base_ber_wifi     = 1e-7;
+    params.services.video_streaming.base_ber_vlc      = 5e-8;
     
     % 3. Online Gaming (Low Latency)
     params.services.online_gaming.name = 'Online Gaming';
@@ -37,6 +49,12 @@ function params = load_config()
     params.services.online_gaming.max_jitter = 10;
     params.services.online_gaming.max_ber = 1e-5;
     params.services.online_gaming.priority = 7;
+    params.services.online_gaming.base_latency_wifi = 5.0;
+    params.services.online_gaming.base_latency_vlc  = 2.0;
+    params.services.online_gaming.base_jitter_wifi  = 2.0;
+    params.services.online_gaming.base_jitter_vlc   = 1.0;
+    params.services.online_gaming.base_ber_wifi     = 1e-6;
+    params.services.online_gaming.base_ber_vlc      = 5e-7;
     
     % 4. VR/AR (Beyond 5G - High Bandwidth & Low Latency)
     params.services.vr_ar.name = 'VR/AR';
@@ -45,6 +63,12 @@ function params = load_config()
     params.services.vr_ar.max_jitter = 5;
     params.services.vr_ar.max_ber = 1e-7;
     params.services.vr_ar.priority = 9;
+    params.services.vr_ar.base_latency_wifi = 3.0;
+    params.services.vr_ar.base_latency_vlc  = 1.0;
+    params.services.vr_ar.base_jitter_wifi  = 1.5;
+    params.services.vr_ar.base_jitter_vlc   = 0.5;
+    params.services.vr_ar.base_ber_wifi     = 1e-8;
+    params.services.vr_ar.base_ber_vlc      = 5e-9;
     
     % 5. Industrial Automation (URLLC - Ultra-Reliable Low Latency)
     params.services.industrial.name = 'Industrial Automation';
@@ -53,6 +77,12 @@ function params = load_config()
     params.services.industrial.max_jitter = 1;
     params.services.industrial.max_ber = 1e-9;
     params.services.industrial.priority = 10;
+    params.services.industrial.base_latency_wifi = 0.3;
+    params.services.industrial.base_latency_vlc  = 0.1;
+    params.services.industrial.base_jitter_wifi  = 0.3;
+    params.services.industrial.base_jitter_vlc   = 0.1;
+    params.services.industrial.base_ber_wifi     = 1e-10;
+    params.services.industrial.base_ber_vlc      = 5e-11;
 
     % Probability distribution for user generation (must sum to 1)
     % [Web, Video, Gaming, VR/AR, Industrial]

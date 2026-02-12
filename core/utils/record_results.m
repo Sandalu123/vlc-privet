@@ -72,33 +72,30 @@ function results = record_results(results, t, users, handover_count, params)
             bers = zeros(1, length(service_users));
             satisfied_count = 0;
             
+            svc = params.services.(s_name);
             for u = 1:length(service_users)
                 user = service_users(u);
                 net_id = user.current_network;
                 
                 % Determine AP position and max range
                 if net_id == 1 % WiFi
-                    % Find nearest WiFi AP
                     dists = vecnorm(params.wifi_ap_positions - user.position, 2, 2);
                     [dist, ~] = min(dists);
                     max_range = params.wifi_coverage_radius;
-                    
-                    base_delay = params.wifi_base_delay;
-                    base_jitter = params.wifi_base_jitter;
-                    base_ber = params.wifi_base_ber;
+                    base_delay  = svc.base_latency_wifi;
+                    base_jitter = svc.base_jitter_wifi;
+                    base_ber    = svc.base_ber_wifi;
                 else % VLC
-                    % Find specific VLC AP (net_id - 1)
                     if net_id - 1 <= size(params.vlc_ap_positions, 1)
                         ap_pos = params.vlc_ap_positions(net_id - 1, :);
                         dist = norm(user.position - ap_pos);
                     else
-                        dist = 0; % Should not happen
+                        dist = 0;
                     end
                     max_range = params.vlc_coverage_radius;
-                    
-                    base_delay = params.vlc_base_delay;
-                    base_jitter = params.vlc_base_jitter;
-                    base_ber = params.vlc_base_ber;
+                    base_delay  = svc.base_latency_vlc;
+                    base_jitter = svc.base_jitter_vlc;
+                    base_ber    = svc.base_ber_vlc;
                 end
                 
                 % Estimate QoS Metrics (Simplified Model)
