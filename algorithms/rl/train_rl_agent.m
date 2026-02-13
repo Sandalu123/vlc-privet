@@ -219,7 +219,7 @@ function [agent, training_stats] = train_rl_agent(config)
         handover_vals = [];
         for j = 1:length(eval_results)
             fairness_vals(j) = mean(eval_results{j}.fairness);
-            throughput_vals(j) = mean(eval_results{j}.avg_allocation);
+            throughput_vals(j) = mean((eval_results{j}.avg_allocation + eval_results{j}.avg_allocation_ul) / 2 .* eval_results{j}.total_users);
             handover_vals(j) = sum(eval_results{j}.handovers);
         end
         
